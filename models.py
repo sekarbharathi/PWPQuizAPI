@@ -19,7 +19,7 @@ class Category(db.Model):
 
     category_id = db.Column(db.Integer, primary_key=True)
 
-    name = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), unique=True, nullable=False)
 
     # Relationship to Quiz via junction table
 
