@@ -4,6 +4,7 @@ This module sets up the Flask application and initializes the database.
 It configures the Flask app with the settings from the `Config` class in the `config.py` file.
 The `db` instance from `models.py` is initialized and used to create the database tables.
 """
+
 import os
 from flask import Flask
 from models import db  # Import db instance from models.py
