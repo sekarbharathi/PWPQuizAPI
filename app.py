@@ -6,19 +6,22 @@ for categories, quizzes, and questions, and integrates with a SQLAlchemy databas
 """
 
 from urllib.parse import unquote
+
 from flask import Flask, request, jsonify
+from flask.views import MethodView
 from flask_jwt_extended import (
     JWTManager,
     jwt_required,
     create_access_token,
     get_jwt_identity,
 )
-from flask.views import MethodView
+from flask_caching import Cache
+
 from werkzeug.routing import BaseConverter
 from sqlalchemy import func
 import jsonschema
 from jsonschema import validate
-from flask_caching import Cache
+
 from config import Config
 from models import db, Quiz, Category, Option, Question, QuizQuestion, QuizCategory
 
@@ -29,31 +32,36 @@ db.init_app(app)
 
 # Custom URL Converters
 class CategoryConverter(BaseConverter):
-    """Automatically handles URL encoding/decoding of category names"""
+    """Automatically handles URL encoding/decoding of category names."""
 
     def to_python(self, value):
+        """Convert URL-encoded category name to Python string."""
         return unquote(value)
 
     def to_url(self, value):
+        """Convert Python string to URL-safe category name."""
         return value
 
 
 class QuizIDConverter(BaseConverter):
-    """Validates quiz ID format (UUID-like)"""
+    """Validates quiz ID format (UUID-like)."""
 
     def to_python(self, value):
+        """Convert and validate quiz ID."""
         if len(value) != 36:  # Simple format check
             raise ValueError("Invalid quiz ID format")
         return value
 
 
 class QuizNameConverter(BaseConverter):
-    """Handles quiz names (allows spaces and special chars)"""
+    """Handles quiz names (allows spaces and special chars)."""
 
     def to_python(self, value):
+        """Convert URL-encoded quiz name to Python string."""
         return unquote(value)
 
     def to_url(self, value):
+        """Convert Python string to URL-safe quiz name."""
         return value
 
 
@@ -61,6 +69,7 @@ class ComplexityConverter(BaseConverter):
     """Ensures only valid complexity levels are accepted"""
 
     def to_python(self, value):
+        """Convert and validate complexity level."""
         value = value.lower()
         if value not in ["easy", "medium", "hard"]:
             raise ValueError("Invalid complexity level")
@@ -82,7 +91,9 @@ app.config["CACHE_TYPE"] = "SimpleCache"
 app.config["CACHE_DEFAULT_TIMEOUT"] = 300
 cache = Cache(app)
 
-all = ["app", "db", "cache"]
+# List of objects to export
+
+exported_objects = ["app", "db", "cache"]
 
 # Define JSON schemas
 login_schema = {
@@ -143,12 +154,16 @@ def validate_json(json_data, schema):
 
 @app.before_request
 def check_content_type():
+    """Check content type for POST and PUT requests."""
     if request.method in ["POST", "PUT"]:
         if not request.is_json:
             return jsonify({"msg": "Missing JSON in request"}), 400
+    return None
 
 
 class LoginResource(MethodView):
+    """Resource for handling user login and authentication."""
+
     def post(self):
         """Authenticates the user and generates an access token."""
         if not request.is_json:
@@ -170,6 +185,8 @@ class LoginResource(MethodView):
 
 
 class CategoryResource(MethodView):
+    """Resource for handling category operations."""
+
     decorators = [cache.cached(timeout=300)]
 
     def get(self):
@@ -207,6 +224,8 @@ class CategoryResource(MethodView):
 
 
 class CategoryDetailResource(MethodView):
+    """Resource for handling specific category operations."""
+
     @jwt_required()
     def put(self, category_name):
         """Updates the details of an existing category."""
@@ -233,7 +252,7 @@ class CategoryDetailResource(MethodView):
 
         if Category.query.filter(
             func.lower(Category.name) == new_name.lower(),
-            Category.category_id != category.category_id
+            Category.category_id != category.category_id,
         ).first():
             return jsonify({"msg": "Category name already exists"}), 400
 
@@ -265,6 +284,8 @@ class CategoryDetailResource(MethodView):
 
 
 class QuizResource(MethodView):
+    """Resource for handling quiz operations."""
+
     decorators = [cache.cached(timeout=300)]
 
     def get(self):
@@ -282,6 +303,7 @@ class QuizResource(MethodView):
 
     @jwt_required()
     def post(self):
+        """Create a new quiz."""
         current_user = get_jwt_identity()
         if current_user != "admin":
             return jsonify({"msg": "Unauthorized"}), 403
@@ -326,6 +348,8 @@ class QuizResource(MethodView):
 
 
 class QuizDetailResource(MethodView):
+    """Resource for handling specific quiz operations."""
+
     @jwt_required()
     def put(self, unique_id):
         """Updates the details of an existing quiz."""
@@ -386,6 +410,8 @@ class QuizDetailResource(MethodView):
 
 
 class QuestionResource(MethodView):
+    """Resource for handling question operations."""
+
     @jwt_required()
     def post(self):
         """Creates a new question along with its options."""
@@ -470,6 +496,8 @@ class QuestionResource(MethodView):
 
 
 class QuestionDetailResource(MethodView):
+    """Resource for handling specific question operations."""
+
     def get(self, unique_id):
         """Retrieves a specific question by its unique_id."""
         question = Question.query.filter_by(unique_id=unique_id).first()
@@ -577,6 +605,8 @@ class QuestionDetailResource(MethodView):
 
 
 class CategoryQuizQuestionsResource(MethodView):
+    """Resource for handling category-specific quiz questions."""
+
     def get(self, category, quiz):
         """Retrieves all questions for a specific quiz under a given category."""
         category_data = Category.query.filter(
@@ -634,6 +664,8 @@ class CategoryQuizQuestionsResource(MethodView):
 
 
 class FilteredQuizQuestionsResource(MethodView):
+    """Resource for handling filtered quiz questions."""
+
     def get(self, category, quiz):
         """Retrieves filtered questions for a specific quiz."""
         question_count = request.args.get("question_count", default=5, type=int)
@@ -688,6 +720,8 @@ class FilteredQuizQuestionsResource(MethodView):
 
 
 class QuizByCategoryResource(MethodView):
+    """Resource for handling quizzes by category."""
+
     def get(self, category_name):
         """Retrieves all quizzes for a given category name."""
         category = Category.query.filter(
@@ -717,6 +751,8 @@ class QuizByCategoryResource(MethodView):
 
 
 class QuestionsByQuizResource(MethodView):
+    """Resource for handling questions by quiz."""
+
     def get(self, unique_id):
         """Retrieves all questions for a specific quiz."""
         quiz = Quiz.query.filter_by(unique_id=unique_id).first()
