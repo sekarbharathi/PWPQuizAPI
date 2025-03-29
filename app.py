@@ -30,26 +30,71 @@ app.config.from_object(Config)
 db.init_app(app)
 
 
-# Custom URL Converters
+# Custom URL Converters with Database Integration
 class CategoryConverter(BaseConverter):
-    """Automatically handles URL encoding/decoding of category names."""
+    """Handles URL encoding/decoding and returns Category objects."""
 
     def to_python(self, value):
-        """Convert URL-encoded category name to Python string."""
-        return unquote(value)
+        """Convert URL-encoded category name to Category object."""
+        name = unquote(value)
+        category = Category.query.filter(
+            func.lower(Category.name) == name.lower()
+        ).first()
+        if not category:
+            raise ValueError(f"Category '{name}' not found")
+        return category
 
     def to_url(self, value):
-        """Convert Python string to URL-safe category name."""
-        return value
+        """Convert Category object or name to URL-safe string."""
+        if isinstance(value, Category):
+            return value.name
+        return str(value)
 
 
-class QuizIDConverter(BaseConverter):
-    """Validates quiz ID format (UUID-like)."""
+class QuizConverter(BaseConverter):
+    """Handles quiz IDs and returns Quiz objects."""
 
     def to_python(self, value):
-        """Convert and validate quiz ID."""
-        if len(value) != 36:  # Simple format check
+        """Convert and validate quiz ID to Quiz object."""
+        if len(value) != 36:
             raise ValueError("Invalid quiz ID format")
+        quiz = Quiz.query.filter_by(unique_id=value).first()
+        if not quiz:
+            raise ValueError(f"Quiz '{value}' not found")
+        return quiz
+
+    def to_url(self, value):
+        """Convert Quiz object or ID to URL string."""
+        if isinstance(value, Quiz):
+            return value.unique_id
+        return str(value)
+
+
+class QuestionConverter(BaseConverter):
+    """Handles question IDs and returns Question objects."""
+
+    def to_python(self, value):
+        """Convert and validate question ID to Question object."""
+        question = Question.query.filter_by(unique_id=value).first()
+        if not question:
+            raise ValueError(f"Question '{value}' not found")
+        return question
+
+    def to_url(self, value):
+        """Convert Question object or ID to URL string."""
+        if isinstance(value, Question):
+            return value.unique_id
+        return str(value)
+
+
+class ComplexityConverter(BaseConverter):
+    """Ensures only valid complexity levels are accepted"""
+
+    def to_python(self, value):
+        """Convert and validate complexity level."""
+        value = value.lower()
+        if value not in ["easy", "medium", "hard"]:
+            raise ValueError("Invalid complexity level")
         return value
 
 
@@ -65,37 +110,30 @@ class QuizNameConverter(BaseConverter):
         return value
 
 
-class ComplexityConverter(BaseConverter):
-    """Ensures only valid complexity levels are accepted"""
-
-    def to_python(self, value):
-        """Convert and validate complexity level."""
-        value = value.lower()
-        if value not in ["easy", "medium", "hard"]:
-            raise ValueError("Invalid complexity level")
-        return value
-
-
-# Register all converters before defining any routes
+# Register all converters
 app.url_map.converters["category"] = CategoryConverter
-app.url_map.converters["quiz_id"] = QuizIDConverter
-app.url_map.converters["quiz_name"] = QuizNameConverter
+app.url_map.converters["quiz"] = QuizConverter
+app.url_map.converters["question"] = QuestionConverter
 app.url_map.converters["complexity"] = ComplexityConverter
+app.url_map.converters['category_str'] = BaseConverter  # Simple string converter
+app.url_map.converters['quiz_str'] = BaseConverter 
 
 # JWT setup
 app.config["JWT_SECRET_KEY"] = "quiz-api-key"
 jwt = JWTManager(app)
 
 # Flask-Caching setup
-app.config["CACHE_TYPE"] = "SimpleCache"
-app.config["CACHE_DEFAULT_TIMEOUT"] = 300
+# Update Flask-Caching config
+app.config['CACHE_TYPE'] = 'SimpleCache'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300
+app.config['CACHE_THRESHOLD'] = 100
+app.config['CACHE_KEY_PREFIX'] = 'quiz_api_'
 cache = Cache(app)
 
 # List of objects to export
-
 exported_objects = ["app", "db", "cache"]
 
-# Define JSON schemas
+# Define JSON schemas (unchanged)
 login_schema = {
     "type": "object",
     "properties": {
@@ -161,9 +199,8 @@ def check_content_type():
     return None
 
 
+# Resources with updated parameter handling
 class LoginResource(MethodView):
-    """Resource for handling user login and authentication."""
-
     def post(self):
         """Authenticates the user and generates an access token."""
         if not request.is_json:
@@ -185,8 +222,6 @@ class LoginResource(MethodView):
 
 
 class CategoryResource(MethodView):
-    """Resource for handling category operations."""
-
     decorators = [cache.cached(timeout=300)]
 
     def get(self):
@@ -224,10 +259,8 @@ class CategoryResource(MethodView):
 
 
 class CategoryDetailResource(MethodView):
-    """Resource for handling specific category operations."""
-
     @jwt_required()
-    def put(self, category_name):
+    def put(self, category):  # Now receives Category object
         """Updates the details of an existing category."""
         current_user = get_jwt_identity()
         if current_user != "admin":
@@ -240,13 +273,6 @@ class CategoryDetailResource(MethodView):
         is_valid, error_message = validate_json(data, category_schema)
         if not is_valid:
             return jsonify({"msg": f"Invalid request: {error_message}"}), 400
-
-        category = Category.query.filter(
-            func.lower(Category.name) == category_name.lower()
-        ).first()
-
-        if not category:
-            return jsonify({"msg": "Category not found"}), 404
 
         new_name = data.get("name").strip()
 
@@ -263,29 +289,20 @@ class CategoryDetailResource(MethodView):
         return jsonify({"msg": "Category updated", "name": new_name}), 200
 
     @jwt_required()
-    def delete(self, category_name):
+    def delete(self, category):  # Now receives Category object
         """Deletes an existing category."""
         current_user = get_jwt_identity()
         if current_user != "admin":
             return jsonify({"msg": "Unauthorized"}), 403
 
-        category = Category.query.filter(
-            func.lower(Category.name) == category_name.lower()
-        ).first()
-
-        if not category:
-            return jsonify({"msg": "Category not found"}), 404
-
         db.session.delete(category)
         db.session.commit()
 
         cache.delete("view//category")
-        return jsonify({"msg": f"Category '{category.name}' deleted"}), 200
+        return jsonify({"msg": "Category deleted"}), 200
 
 
 class QuizResource(MethodView):
-    """Resource for handling quiz operations."""
-
     decorators = [cache.cached(timeout=300)]
 
     def get(self):
@@ -348,10 +365,8 @@ class QuizResource(MethodView):
 
 
 class QuizDetailResource(MethodView):
-    """Resource for handling specific quiz operations."""
-
     @jwt_required()
-    def put(self, unique_id):
+    def put(self, quiz):  # Now receives Quiz object
         """Updates the details of an existing quiz."""
         current_user = get_jwt_identity()
         if current_user != "admin":
@@ -364,10 +379,6 @@ class QuizDetailResource(MethodView):
         is_valid, error_message = validate_json(data, quiz_schema)
         if not is_valid:
             return jsonify({"msg": f"Invalid request: {error_message}"}), 400
-
-        quiz = Quiz.query.filter_by(unique_id=unique_id).first()
-        if not quiz:
-            return jsonify({"msg": "Quiz not found"}), 404
 
         quiz.name = data.get("name", quiz.name)
         quiz.description = data.get("description", quiz.description)
@@ -392,15 +403,11 @@ class QuizDetailResource(MethodView):
         return jsonify({"msg": "Quiz updated"}), 200
 
     @jwt_required()
-    def delete(self, unique_id):
+    def delete(self, quiz):  # Now receives Quiz object
         """Deletes an existing quiz."""
         current_user = get_jwt_identity()
         if current_user != "admin":
             return jsonify({"msg": "Unauthorized"}), 403
-
-        quiz = Quiz.query.filter_by(unique_id=unique_id).first()
-        if not quiz:
-            return jsonify({"msg": "Quiz not found"}), 404
 
         db.session.delete(quiz)
         db.session.commit()
@@ -410,8 +417,6 @@ class QuizDetailResource(MethodView):
 
 
 class QuestionResource(MethodView):
-    """Resource for handling question operations."""
-
     @jwt_required()
     def post(self):
         """Creates a new question along with its options."""
@@ -480,14 +485,19 @@ class QuestionResource(MethodView):
             quiz_question = QuizQuestion.query.filter_by(
                 question_id=q.question_id
             ).first()
-            quiz_id = quiz_question.quiz_id if quiz_question else None
+
+            # Get the quiz's unique_id instead of quiz_id
+            quiz_unique_id = None
+            if quiz_question:
+                quiz = Quiz.query.get(quiz_question.quiz_id)
+                quiz_unique_id = quiz.unique_id if quiz else None
 
             question_list.append(
                 {
                     "unique_id": q.unique_id,
                     "question_statement": q.question_statement,
                     "complex_level": q.complex_level,
-                    "quiz_id": quiz_id,
+                    "quiz_unique_id": quiz_unique_id,  # Changed from quiz_id
                     "options": options_list,
                 }
             )
@@ -496,14 +506,8 @@ class QuestionResource(MethodView):
 
 
 class QuestionDetailResource(MethodView):
-    """Resource for handling specific question operations."""
-
-    def get(self, unique_id):
+    def get(self, question):  # Now receives Question object
         """Retrieves a specific question by its unique_id."""
-        question = Question.query.filter_by(unique_id=unique_id).first()
-        if not question:
-            return jsonify({"msg": "Question not found"}), 404
-
         options = Option.query.filter_by(question_id=question.question_id).all()
         options_list = [
             {
@@ -530,7 +534,7 @@ class QuestionDetailResource(MethodView):
         return jsonify(question_data), 200
 
     @jwt_required()
-    def put(self, unique_id):
+    def put(self, question):  # Now receives Question object
         """Updates an existing question and its options."""
         current_user = get_jwt_identity()
         if current_user != "admin":
@@ -543,10 +547,6 @@ class QuestionDetailResource(MethodView):
         is_valid, error_message = validate_json(data, question_schema)
         if not is_valid:
             return jsonify({"msg": f"Invalid request: {error_message}"}), 400
-
-        question = Question.query.filter_by(unique_id=unique_id).first()
-        if not question:
-            return jsonify({"msg": "Question not found"}), 404
 
         question.question_statement = data.get(
             "question_statement", question.question_statement
@@ -586,15 +586,11 @@ class QuestionDetailResource(MethodView):
         return jsonify({"msg": "Question updated"}), 200
 
     @jwt_required()
-    def delete(self, unique_id):
+    def delete(self, question):  # Now receives Question object
         """Deletes a specific question and its related records."""
         current_user = get_jwt_identity()
         if current_user != "admin":
             return jsonify({"msg": "Unauthorized"}), 403
-
-        question = Question.query.filter_by(unique_id=unique_id).first()
-        if not question:
-            return jsonify({"msg": "Question not found"}), 404
 
         QuizQuestion.query.filter_by(question_id=question.question_id).delete()
         Option.query.filter_by(question_id=question.question_id).delete()
@@ -605,132 +601,136 @@ class QuestionDetailResource(MethodView):
 
 
 class CategoryQuizQuestionsResource(MethodView):
-    """Resource for handling category-specific quiz questions."""
-
-    def get(self, category, quiz):
+    def get(self, category_name, quiz_name):  # Changed parameter names to be explicit
         """Retrieves all questions for a specific quiz under a given category."""
-        category_data = Category.query.filter(
-            func.lower(Category.name) == category.lower()
+        # Get category by name (string)
+        category = Category.query.filter(
+            func.lower(Category.name) == category_name.lower()
         ).first()
-        if not category_data:
+        if not category:
             return jsonify({"msg": "Category not found"}), 404
 
-        quiz_data = Quiz.query.filter(func.lower(Quiz.name) == quiz.lower()).first()
-        if not quiz_data:
+        # Get quiz by name (string)
+        quiz = Quiz.query.filter(
+            func.lower(Quiz.name) == quiz_name.lower()
+        ).first()
+        if not quiz:
             return jsonify({"msg": "Quiz not found"}), 404
 
+        # Verify quiz belongs to category
+        quiz_category = QuizCategory.query.filter_by(
+            quiz_id=quiz.quiz_id,
+            category_id=category.category_id
+        ).first()
+        if not quiz_category:
+            return jsonify({"msg": "Quiz not found in this category"}), 404
+
+        # Get questions
         questions = (
             db.session.query(Question)
             .join(QuizQuestion)
-            .filter(QuizQuestion.quiz_id == quiz_data.quiz_id)
+            .filter(QuizQuestion.quiz_id == quiz.quiz_id)
             .all()
         )
 
-        if not questions:
-            return jsonify({"msg": "No questions found"}), 404
-
+        # Prepare response
         questions_list = []
         for q in questions:
             options = Option.query.filter_by(question_id=q.question_id).all()
-            options_list = [
-                {
-                    "unique_id": opt.unique_id,
-                    "statement": opt.option_statement,
-                    "is_correct": opt.is_correct,
-                }
-                for opt in options
-            ]
+            questions_list.append({
+                "unique_id": q.unique_id,
+                "question_statement": q.question_statement,
+                "complex_level": q.complex_level,
+                "options": [
+                    {
+                        "unique_id": opt.unique_id,
+                        "statement": opt.option_statement,
+                        "is_correct": opt.is_correct,
+                    } for opt in options
+                ]
+            })
 
-            questions_list.append(
-                {
-                    "unique_id": q.unique_id,
-                    "question_statement": q.question_statement,
-                    "complex_level": q.complex_level,
-                    "options": options_list,
-                }
-            )
-
-        return (
-            jsonify(
-                {
-                    "category": category_data.name,
-                    "quiz": quiz_data.name,
-                    "description": quiz_data.description,
-                    "questions": questions_list,
-                }
-            ),
-            200,
-        )
-
+        return jsonify({
+            "category": category.name,
+            "quiz": quiz.name,
+            "description": quiz.description,
+            "questions": questions_list
+        }), 200
 
 class FilteredQuizQuestionsResource(MethodView):
-    """Resource for handling filtered quiz questions."""
-
-    def get(self, category, quiz):
+    def get(self, category_name, quiz_name):
         """Retrieves filtered questions for a specific quiz."""
-        question_count = request.args.get("question_count", default=5, type=int)
-        complex_level = request.args.get("complex_level", default="medium", type=str)
+        # Get query parameters
+        question_count = request.args.get('question_count', default=5, type=int)
+        complex_level = request.args.get('complex_level', default='medium', type=str).lower()
+        
+        # Validate complexity level
+        if complex_level not in ['easy', 'medium', 'hard']:
+            return jsonify({"msg": "Invalid complexity level"}), 400
 
-        category_data = Category.query.filter(
-            func.lower(Category.name) == category.lower()
+        # Get category by name
+        category = Category.query.filter(
+            func.lower(Category.name) == category_name.lower()
         ).first()
-        if not category_data:
+        if not category:
             return jsonify({"msg": "Category not found"}), 404
 
-        quiz_data = Quiz.query.filter(func.lower(Quiz.name) == quiz.lower()).first()
-        if not quiz_data:
+        # Get quiz by name
+        quiz = Quiz.query.filter(
+            func.lower(Quiz.name) == quiz_name.lower()
+        ).first()
+        if not quiz:
             return jsonify({"msg": "Quiz not found"}), 404
 
+        # Verify quiz belongs to category
+        quiz_category = QuizCategory.query.filter_by(
+            quiz_id=quiz.quiz_id,
+            category_id=category.category_id
+        ).first()
+        if not quiz_category:
+            return jsonify({"msg": "Quiz not found in this category"}), 404
+
+        # Get filtered questions
         questions = (
             db.session.query(Question)
             .join(QuizQuestion)
             .filter(
-                QuizQuestion.quiz_id == quiz_data.quiz_id,
-                Question.complex_level == complex_level,
+                QuizQuestion.quiz_id == quiz.quiz_id,
+                Question.complex_level == complex_level
             )
+            .order_by(func.random())  # Random ordering
             .limit(question_count)
             .all()
         )
 
-        if not questions:
-            return jsonify({"msg": "No questions found"}), 404
-
+        # Prepare response
         questions_list = []
         for q in questions:
             options = Option.query.filter_by(question_id=q.question_id).all()
-            options_list = [
-                {
-                    "unique_id": opt.unique_id,
-                    "statement": opt.option_statement,
-                    "is_correct": opt.is_correct,
-                }
-                for opt in options
-            ]
+            questions_list.append({
+                "unique_id": q.unique_id,
+                "question_statement": q.question_statement,
+                "complex_level": q.complex_level,
+                "options": [
+                    {
+                        "unique_id": opt.unique_id,
+                        "statement": opt.option_statement,
+                        "is_correct": opt.is_correct,
+                    } for opt in options
+                ]
+            })
 
-            questions_list.append(
-                {
-                    "unique_id": q.unique_id,
-                    "question_statement": q.question_statement,
-                    "complex_level": q.complex_level,
-                    "options": options_list,
-                }
-            )
-
-        return jsonify({"quiz": quiz, "questions": questions_list}), 200
+        return jsonify({
+            "quiz": quiz.name,
+            "complexity": complex_level,
+            "question_count": len(questions_list),
+            "questions": questions_list
+        }), 200
 
 
 class QuizByCategoryResource(MethodView):
-    """Resource for handling quizzes by category."""
-
-    def get(self, category_name):
+    def get(self, category):  # Now receives Category object
         """Retrieves all quizzes for a given category name."""
-        category = Category.query.filter(
-            func.lower(Category.name) == category_name.lower()
-        ).first()
-
-        if not category:
-            return jsonify({"msg": "Category not found"}), 404
-
         quizzes = (
             db.session.query(Quiz)
             .join(QuizCategory)
@@ -751,14 +751,8 @@ class QuizByCategoryResource(MethodView):
 
 
 class QuestionsByQuizResource(MethodView):
-    """Resource for handling questions by quiz."""
-
-    def get(self, unique_id):
+    def get(self, quiz):  # Now receives Quiz object
         """Retrieves all questions for a specific quiz."""
-        quiz = Quiz.query.filter_by(unique_id=unique_id).first()
-        if not quiz:
-            return jsonify({"msg": "Quiz not found"}), 404
-
         questions = (
             db.session.query(Question)
             .join(QuizQuestion)
@@ -794,7 +788,7 @@ app.add_url_rule(
     "/category", view_func=CategoryResource.as_view("category"), methods=["GET", "POST"]
 )
 app.add_url_rule(
-    "/category/<category:category_name>",
+    "/category/<category:category>",
     view_func=CategoryDetailResource.as_view("category_detail"),
     methods=["PUT", "DELETE"],
 )
@@ -802,7 +796,7 @@ app.add_url_rule(
     "/quiz", view_func=QuizResource.as_view("quiz"), methods=["GET", "POST"]
 )
 app.add_url_rule(
-    "/quiz/<quiz_id:unique_id>",
+    "/quiz/<quiz:quiz>",
     view_func=QuizDetailResource.as_view("quiz_detail"),
     methods=["PUT", "DELETE"],
 )
@@ -812,27 +806,27 @@ app.add_url_rule(
     methods=["GET", "POST"],
 )
 app.add_url_rule(
-    "/question/<quiz_id:unique_id>",
+    "/question/<question:question>",
     view_func=QuestionDetailResource.as_view("question_detail"),
     methods=["GET", "PUT", "DELETE"],
 )
 app.add_url_rule(
-    "/category/<category:category>/quiz/<quiz_name:quiz>/all",
-    view_func=CategoryQuizQuestionsResource.as_view("category_quiz_questions"),
-    methods=["GET"],
+    '/category/<category_str:category_name>/quiz/<quiz_str:quiz_name>/all',
+    view_func=CategoryQuizQuestionsResource.as_view('category_quiz_questions'),
+    methods=['GET']
 )
 app.add_url_rule(
-    "/category/<category:category>/quiz/<quiz_name:quiz>/questions",
-    view_func=FilteredQuizQuestionsResource.as_view("filtered_quiz_questions"),
-    methods=["GET"],
+    '/category/<category_str:category_name>/quiz/<quiz_str:quiz_name>/questions',
+    view_func=FilteredQuizQuestionsResource.as_view('filtered_quiz_questions'),
+    methods=['GET']
 )
 app.add_url_rule(
-    "/quiz/category/<category:category_name>",
+    "/quiz/category/<category:category>",
     view_func=QuizByCategoryResource.as_view("quizzes_by_category"),
     methods=["GET"],
 )
 app.add_url_rule(
-    "/quiz/<quiz_id:unique_id>/questions",
+    "/quiz/<quiz:quiz>/questions",
     view_func=QuestionsByQuizResource.as_view("questions_by_quiz"),
     methods=["GET"],
 )
