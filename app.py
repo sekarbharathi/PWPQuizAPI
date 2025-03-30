@@ -257,7 +257,6 @@ class CategoryResource(MethodView):
             # Create category data with basic info
             cat_data = {
                 "name": cat.name,
-                "category_id": cat.category_id,
                 # Add hypermedia links specific to this category
                 "_links": {
                     "self": url_for("category_detail", category=cat, _external=True),
@@ -275,7 +274,6 @@ class CategoryResource(MethodView):
         }
         
         return jsonify(response), 200
-
     @jwt_required()
     def post(self):
         """Creates a new category in the database."""
@@ -301,6 +299,7 @@ class CategoryResource(MethodView):
         cache.delete("view//category")
         response = {"msg": "Category created", "name": name}
         return jsonify(add_hypermedia_links(response, "category", name)), 201
+
 
 
 class CategoryDetailResource(MethodView):
@@ -1060,62 +1059,6 @@ class FilteredQuizQuestionsResource(MethodView):
         
         return jsonify(response), 201
 
-class CategoryResource(MethodView):
-    
-    @cache.cached(timeout=300, key_prefix="view//category")
-    def get(self):
-        """Retrieves all categories from the database with hypermedia links."""
-        categories = Category.query.all()
-        
-        # Create a list of categories with individual hypermedia links
-        categories_data = []
-        for cat in categories:
-            # Create category data with basic info
-            cat_data = {
-                "name": cat.name,
-                "category_id": cat.category_id,
-                # Add hypermedia links specific to this category
-                "_links": {
-                    "self": url_for("category_detail", category=cat, _external=True),
-                    "quizzes": url_for("quizzes_by_category", category=cat, _external=True)
-                }
-            }
-            categories_data.append(cat_data)
-        
-        # Add collection-level hypermedia
-        response = {
-            "categories": categories_data,
-            "_links": {
-                "self": url_for("category", _external=True)
-            }
-        }
-        
-        return jsonify(response), 200
-    @jwt_required()
-    def post(self):
-        """Creates a new category in the database."""
-        current_user = get_jwt_identity()
-        if current_user != "admin":
-            return jsonify({"msg": "Unauthorized"}), 403
-
-        data = request.get_json()
-        is_valid, error_message = validate_json(data, category_schema)
-        if not is_valid:
-            return jsonify({"msg": f"Invalid request: {error_message}"}), 400
-
-        name = data.get("name").strip()
-
-        # Check for existing category - directly query instead of using converter
-        if Category.query.filter(func.lower(Category.name) == name.lower()).first():
-            return jsonify({"msg": "Category already exists"}), 400
-
-        new_category = Category(name=name)
-        db.session.add(new_category)
-        db.session.commit()
-
-        cache.delete("view//category")
-        response = {"msg": "Category created", "name": name}
-        return jsonify(add_hypermedia_links(response, "category", name)), 201
 
 
 
