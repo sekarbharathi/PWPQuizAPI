@@ -160,4 +160,4 @@ Use tools like Postman or curl to test the endpoints.
 
 To run the tests and check coverage, use the following command:
 
-    pytest --cov=app --cov-report=term-missing
+    python -m pytest --cov=app --cov-report=term-missing
