@@ -1,0 +1,1218 @@
+openapi: 3.0.4
+info:
+  title: Quiz API
+  description: |
+    A RESTful API for managing quizzes, categories, and questions.
+    This API allows users to create, read, update, and delete quizzes, categories, and questions,
+    with support for JWT authentication and hypermedia links.
+  version: 1.0.0
+  contact:
+    email: your-email@example.com
+
+servers:
+  - url: /
+    description: API base path
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Authorization header using the Bearer scheme
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        msg:
+          type: string
+          description: Error message
+
+    Links:
+      type: object
+      properties:
+        self:
+          type: string
+          description: URL to the current resource
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Username for authentication
+        password:
+          type: string
+          description: Password for authentication
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT token for authentication
+        _links:
+          $ref: '#/components/schemas/Links'
+
+    Category:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: The category name
+
+    CategoryResponse:
+      type: object
+      properties:
+        category_id:
+          type: integer
+          description: The category ID
+        name:
+          type: string
+          description: The category name
+        _links:
+          type: object
+          properties:
+            self:
+              type: string
+              description: URL to this category
+            quizzes:
+              type: string
+              description: URL to quizzes in this category
+
+    CategoriesResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Category name
+              _links:
+                type: object
+                properties:
+                  self:
+                    type: string
+                    description: URL to this category
+                  quizzes:
+                    type: string
+                    description: URL to quizzes in this category
+        _links:
+          $ref: '#/components/schemas/Links'
+
+    Quiz:
+      type: object
+      required:
+        - name
+        - category_name
+      properties:
+        name:
+          type: string
+          description: The quiz name
+        description:
+          type: string
+          description: The quiz description
+        category_name:
+          type: string
+          description: The name of the category this quiz belongs to
+
+    QuizResponse:
+      type: object
+      properties:
+        unique_id:
+          type: string
+          description: The unique identifier for the quiz
+        name:
+          type: string
+          description: The quiz name
+        description:
+          type: string
+          description: The quiz description
+        category:
+          type: string
+          description: The category name
+        _links:
+          type: object
+          properties:
+            self:
+              type: string
+              description: URL to this quiz
+            questions:
+              type: string
+              description: URL to questions in this quiz
+
+    QuizzesResponse:
+      type: object
+      properties:
+        quizzes:
+          type: array
+          items:
+            type: object
+            properties:
+              unique_id:
+                type: string
+                description: Unique identifier for the quiz
+              name:
+                type: string
+                description: Quiz name
+              description:
+                type: string
+                description: Quiz description
+              _links:
+                type: object
+                properties:
+                  self:
+                    type: string
+                    description: URL to this quiz
+                  questions:
+                    type: string
+                    description: URL to questions in this quiz
+        _links:
+          $ref: '#/components/schemas/Links'
+
+    Option:
+      type: object
+      required:
+        - option_statement
+        - is_correct
+      properties:
+        option_statement:
+          type: string
+          description: The option text
+        is_correct:
+          type: boolean
+          description: Whether this option is correct
+
+    Question:
+      type: object
+      required:
+        - question_statement
+        - complex_level
+        - quiz_unique_id
+        - options
+      properties:
+        question_statement:
+          type: string
+          description: The question text
+        complex_level:
+          type: string
+          enum: [easy, medium, hard]
+          description: The complexity level of the question
+        quiz_unique_id:
+          type: string
+          description: The unique ID of the quiz this question belongs to
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+          description: The answer options for this question
+
+    QuestionResponse:
+      type: object
+      properties:
+        unique_id:
+          type: string
+          description: The unique identifier for the question
+        question_statement:
+          type: string
+          description: The question text
+        complex_level:
+          type: string
+          enum: [easy, medium, hard]
+          description: The complexity level of the question
+        quiz_unique_id:
+          type: string
+          description: The unique ID of the quiz this question belongs to
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              unique_id:
+                type: string
+                description: Unique identifier for the option
+              option_statement:
+                type: string
+                description: The option text
+              is_correct:
+                type: boolean
+                description: Whether this option is correct
+        _links:
+          type: object
+          properties:
+            self:
+              type: string
+              description: URL to this question
+            quiz:
+              type: string
+              description: URL to the quiz this question belongs to
+
+    QuestionsResponse:
+      type: object
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionResponse'
+        _links:
+          $ref: '#/components/schemas/Links'
+
+    QuizQuestionsResponse:
+      type: object
+      properties:
+        quiz:
+          type: object
+          properties:
+            unique_id:
+              type: string
+              description: The unique identifier for the quiz
+            name:
+              type: string
+              description: The quiz name
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionResponse'
+        _links:
+          type: object
+          properties:
+            self:
+              type: string
+              description: URL to this resource
+            quiz:
+              type: string
+              description: URL to the quiz
+
+    CategoryQuizzesResponse:
+      type: object
+      properties:
+        category:
+          type: string
+          description: The category name
+        quizzes:
+          type: array
+          items:
+            type: object
+            properties:
+              unique_id:
+                type: string
+                description: Unique identifier for the quiz
+              name:
+                type: string
+                description: Quiz name
+              description:
+                type: string
+                description: Quiz description
+        _links:
+          $ref: '#/components/schemas/Links'
+
+    FilteredQuestionsResponse:
+      type: object
+      properties:
+        quiz:
+          type: string
+          description: The quiz name
+        complexity:
+          type: string
+          enum: [easy, medium, hard]
+          description: The complexity level of the questions
+        question_count:
+          type: integer
+          description: The number of questions returned
+        questions:
+          type: array
+          items:
+            type: object
+            properties:
+              unique_id:
+                type: string
+                description: Unique identifier for the question
+              question_statement:
+                type: string
+                description: The question text
+              complex_level:
+                type: string
+                enum: [easy, medium, hard]
+                description: The complexity level of the question
+              options:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    unique_id:
+                      type: string
+                      description: Unique identifier for the option
+                    statement:
+                      type: string
+                      description: The option text
+                    is_correct:
+                      type: boolean
+                      description: Whether this option is correct
+              _links:
+                type: object
+                properties:
+                  self:
+                    type: string
+                    description: URL to this question
+        _links:
+          type: object
+          properties:
+            self:
+              type: string
+              description: URL to this resource
+            all_questions:
+              type: string
+              description: URL to all questions for this quiz
+            category:
+              type: string
+              description: URL to the category
+            quiz:
+              type: string
+              description: URL to the quiz
+
+paths:
+  /login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticates a user and returns an access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: admin
+              password: admin123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                _links:
+                  self: http://example.com/login
+        '400':
+          description: Invalid request format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Missing JSON in request
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Invalid credentials
+
+  /category:
+    get:
+      tags:
+        - Categories
+      summary: Get all categories
+      description: Retrieves a list of all categories
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriesResponse'
+              example:
+                categories:
+                  - name: Science
+                    _links:
+                      self: http://example.com/category/Science
+                      quizzes: http://example.com/category/Science/quizzes
+                  - name: History
+                    _links:
+                      self: http://example.com/category/History
+                      quizzes: http://example.com/category/History/quizzes
+                _links:
+                  self: http://example.com/category
+    post:
+      tags:
+        - Categories
+      summary: Create a new category
+      description: Creates a new category
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+            example:
+              name: Literature
+      responses:
+        '201':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    description: Success message
+                  name:
+                    type: string
+                    description: Category name
+                  _links:
+                    $ref: '#/components/schemas/Links'
+              example:
+                msg: Category created
+                name: Literature
+                _links:
+                  self: http://example.com/category/Literature
+        '400':
+          description: Invalid request or category already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Category already exists
+        '403':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unauthorized
+
+  /category/{category}:
+    parameters:
+      - name: category
+        in: path
+        required: true
+        description: Category name
+        schema:
+          type: string
+    get:
+      tags:
+        - Categories
+      summary: Get category details
+      description: Retrieves details of a specific category
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+              example:
+                category_id: 1
+                name: Science
+                _links:
+                  self: http://example.com/category/Science
+                  quizzes: http://example.com/category/Science/quizzes
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Category 'NonExistentCategory' not found
+    put:
+      tags:
+        - Categories
+      summary: Update a category
+      description: Updates the details of an existing category
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+            example:
+              name: Natural Sciences
+      responses:
+        '200':
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    description: Success message
+                  old_name:
+                    type: string
+                    description: Original category name
+                  new_name:
+                    type: string
+                    description: Updated category name
+                  _links:
+                    $ref: '#/components/schemas/Links'
+              example:
+                msg: Category updated
+                old_name: Science
+                new_name: Natural Sciences
+                _links:
+                  self: http://example.com/category/Natural%20Sciences
+        '400':
+          description: Invalid request or category name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Category name already exists
+        '403':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unauthorized
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Category 'NonExistentCategory' not found
+    delete:
+      tags:
+        - Categories
+      summary: Delete a category
+      description: Deletes an existing category
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Category deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    description: Success message
+                  name:
+                    type: string
+                    description: Category name
+                  _links:
+                    $ref: '#/components/schemas/Links'
+              example:
+                msg: Category deleted
+                name: Literature
+                _links:
+                  self: http://example.com/category
+        '400':
+          description: Category in use by quizzes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Cannot delete category in use by quizzes
+        '403':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unauthorized
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Category 'NonExistentCategory' not found
+
+  /quiz:
+    get:
+      tags:
+        - Quizzes
+      summary: Get all quizzes
+      description: Retrieves a list of all quizzes
+      responses:
+        '200':
+          description: List of quizzes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizzesResponse'
+              example:
+                quizzes:
+                  - unique_id: 123e4567-e89b-12d3-a456-426614174000
+                    name: Physics 101
+                    description: Basic physics concepts
+                    _links:
+                      self: http://example.com/quiz/123e4567-e89b-12d3-a456-426614174000
+                      questions: http://example.com/quiz/123e4567-e89b-12d3-a456-426614174000/questions
+                  - unique_id: 223e4567-e89b-12d3-a456-426614174001
+                    name: World History
+                    description: Major historical events
+                    _links:
+                      self: http://example.com/quiz/223e4567-e89b-12d3-a456-426614174001
+                      questions: http://example.com/quiz/223e4567-e89b-12d3-a456-426614174001/questions
+                _links:
+                  self: http://example.com/quiz
+    post:
+      tags:
+        - Quizzes
+      summary: Create a new quiz
+      description: Creates a new quiz
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Quiz'
+            example:
+              name: Chemistry Basics
+              description: Introduction to chemical elements and reactions
+              category_name: Science
+      responses:
+        '201':
+          description: Quiz created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    description: Success message
+                  unique_id:
+                    type: string
+                    description: Quiz unique ID
+                  category:
+                    type: string
+                    description: Category name
+                  _links:
+                    $ref: '#/components/schemas/Links'
+              example:
+                msg: Quiz created
+                unique_id: 323e4567-e89b-12d3-a456-426614174002
+                category: Science
+                _links:
+                  self: http://example.com/quiz/323e4567-e89b-12d3-a456-426614174002
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: "Invalid request: name is required"
+        '403':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unauthorized
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Category not found
+
+  /quiz/{quiz}:
+    parameters:
+      - name: quiz
+        in: path
+        required: true
+        description: Quiz unique ID
+        schema:
+          type: string
+    get:
+      tags:
+        - Quizzes
+      summary: Get quiz details
+      description: Retrieves details of a specific quiz
+      responses:
+        '200':
+          description: Quiz details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizResponse'
+              example:
+                unique_id: 123e4567-e89b-12d3-a456-426614174000
+                name: Physics 101
+                description: Basic physics concepts
+                category: Science
+                _links:
+                  self: http://example.com/quiz/123e4567-e89b-12d3-a456-426614174000
+                  questions: http://example.com/quiz/123e4567-e89b-12d3-a456-426614174000/questions
+        '404':
+          description: Quiz not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: "Quiz 'invalid-id' not found"
+    put:
+      tags:
+        - Quizzes
+      summary: Update a quiz
+      description: Updates the details of an existing quiz
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Quiz'
+            example:
+              name: Advanced Physics
+              description: Complex physics topics and theories
+              category_name: Science
+      responses:
+        '200':
+          description: Quiz updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    description: Success message
+                  _links:
+                    $ref: '#/components/schemas/Links'
+              example:
+                msg: Quiz updated
+                _links:
+                  self: http://example.com/quiz/123e4567-e89b-12d3-a456-426614174000
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: "Invalid request: name is required"
+        '403':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unauthorized
+        '404':
+          description: Quiz or category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Category not found
+    delete:
+      tags:
+        - Quizzes
+      summary: Delete a quiz
+      description: Deletes an existing quiz
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Quiz deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    description: Success message
+                  _links:
+                    $ref: '#/components/schemas/Links'
+              example:
+                msg: Quiz deleted
+                _links:
+                  self: http://example.com/quiz
+        '403':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unauthorized
+        '404':
+          description: Quiz not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: "Quiz 'invalid-id' not found"
+
+  /question:
+    get:
+      tags:
+        - Questions
+      summary: Get all questions
+      description: Retrieves a list of all questions with their options
+      responses:
+        '200':
+          description: List of questions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionsResponse'
+    post:
+      tags:
+        - Questions
+      summary: Create a new question
+      description: Creates a new question with options
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Question'
+            example:
+              question_statement: What is the capital of France?
+              complex_level: easy
+              quiz_unique_id: 123e4567-e89b-12d3-a456-426614174000
+              options:
+                - option_statement: Paris
+                  is_correct: true
+                - option_statement: London
+                  is_correct: false
+                - option_statement: Berlin
+                  is_correct: false
+                - option_statement: Rome
+                  is_correct: false
+      responses:
+        '201':
+          description: Question created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    description: Success message
+                  unique_id:
+                    type: string
+                    description: Question unique ID
+                  _links:
+                    $ref: '#/components/schemas/Links'
+              example:
+                msg: Question created
+                unique_id: 423e4567-e89b-12d3-a456-426614174003
+                _links:
+                  self: http://example.com/question/423e4567-e89b-12d3-a456-426614174003
+        '400':
+          description: Invalid request or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: At least one option must be marked as correct
+        '403':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unauthorized
+        '404':
+          description: Quiz not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Quiz not found
+
+  /question/{question}:
+    parameters:
+      - name: question
+        in: path
+        required: true
+        description: Question unique ID
+        schema:
+          type: string
+    get:
+      tags:
+        - Questions
+      summary: Get question details
+      description: Retrieves details of a specific question with its options
+      responses:
+        '200':
+          description: Question details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+              example:
+                unique_id: 423e4567-e89b-12d3-a456-426614174003
+                question_statement: What is the capital of France?
+                complex_level: easy
+                quiz_unique_id: 123e4567-e89b-12d3-a456-426614174000
+                options:
+                  - unique_id: 523e4567-e89b-12d3-a456-426614174004
+                    option_statement: Paris
+                    is_correct: true
+                  - unique_id: 623e4567-e89b-12d3-a456-426614174005
+                    option_statement: London
+                    is_correct: false
+                  - unique_id: 723e4567-e89b-12d3-a456-426614174006
+                    option_statement: Berlin
+                    is_correct: false
+                  - unique_id: 823e4567-e89b-12d3-a456-426614174007
+                    option_statement: Rome
+                    is_correct: false
+                _links:
+                  self: http://example.com/question/423e4567-e89b-12d3-a456-426614174003
+                  quiz: http://example.com/quiz/123e4567-e89b-12d3-a456-426614174000
+        '404':
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: "Question 'invalid-id' not found"
+    put:
+      tags:
+        - Questions
+      summary: Update a question
+      description: Updates an existing question and its options
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Question'
+            example:
+              question_statement: What is the largest city in France?
+              complex_level: medium
+              quiz_unique_id: 123e4567-e89b-12d3-a456-426614174000
+              options:
+                - option_statement: Paris
+                  is_correct: true
+                - option_statement: Lyon
+                  is_correct: false
+                - option_statement: Marseille
+                  is_correct: false
+                - option_statement: Nice
+                  is_correct: false
+      responses:
+        '200':
+          description: Question updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    description: Success message
+                  _links:
+                    $ref: '#/components/schemas/Links'
+              example:
+                msg: Question updated
+                _links:
+                  self: http://example.com/question/423e4567-e89b-12d3-a456-426614174003
+        '400':
+          description: Invalid request or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: At least one option must be marked as correct
+        '403':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unauthorized
+        '404':
+          description: Question or quiz not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Quiz not found
+    delete:
+      tags:
+        - Questions
+      summary: Delete a question
+      description: Deletes an existing question and its options
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Question deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    description: Success message
+                  _links:
+                    $ref: '#/components/schemas/Links'
+              example:
+                msg: Question and related records deleted
+                _links:
+                  self: http://example.com/question
+        '403':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unauthorized
+        '404':
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: "Question 'invalid-id' not found"
+
+  /category/{category}/quizzes:
+    parameters:
+      - name: category
+        in: path
+        required: true
+        description: Category name
+        schema:
+          type: string
+    get:
+      tags:
+        - Categories
+        - Quizzes
+      summary: Get quizzes by category
+      description: Retrieves all quizzes for a specific category
+      responses:
+        '200':
+          description: List of quizzes in category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryQuizzesResponse'
+              example:
+                category: Science
+                quizzes:
+                  - unique_id: 123e4567-e89b-12d3-a456-426614174000
+                    name: Physics 101
+                    description: Basic physics concepts
+                  - unique_id: 323e4567-e89b-12d3-a456-426614174002
+                    name: Chemistry Basics
+                    description: Introduction to chemical elements and reactions
+                _links:
+                  self: http://example.com/category/Science
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Category 'NonExistentCategory' not found
+
+  /quiz/{quiz}/questions:
+    parameters:
+      - name: quiz
+        in: path
+        required: true
+        description: Quiz unique ID
+        schema:
+          type: string
+    get:
+      tags:
+        - Quizzes
+        - Questions
+      summary: Get questions by quiz
+      description: Retrieves all questions for a specific quiz
+      responses:
+        '200':
+          description: List of questions for the quiz
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizQuestionsResponse'
+              example:
+                quiz:
+                  unique_id: 123e4567-e89b-12d3-a456-426614174000
+                  name: Physics 101
+                questions:
+                  - unique_id: 423e4567-e89b-12d3-a456-426614174003
+                    question_statement: What is the formula for Newton's second law?
+                    complex_level: medium
+                    options:
+                      - unique_id: 523e4567-e89b-12d3-a456-426614174004
+                        option_statement: F = ma
+                        is_correct: true
+                      - unique_id: 623e4567-e89b-12d3-a456-426614174005
+                        option_statement: E = mc²
+                        is_correct: false
+                    _links:
+                      self: http://example.com/question/423e4567-e89b-12d3-a456-426614174003
+                      quiz: http://example.com/quiz/123e4567-e89b-12d3-a456-426614174000
+                _links:
+                  self: http://example.com/quiz/123e4567-e89b-12d3-a456-426614174000/questions
+                  quiz: http://example.com/quiz/123e4567-e89b-12d3-a456-426614174000
+        '404':
+          description: Quiz not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: "Quiz 'invalid-id' not found"
