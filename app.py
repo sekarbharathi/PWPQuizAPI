@@ -5,7 +5,9 @@ It includes authentication using JWT, CRUD operations
 for categories, quizzes, and questions, and integrates with a SQLAlchemy database.
 """
 
-from urllib.parse import unquote
+from urllib.parse import unquote, quote
+
+import uuid
 
 from flask import Flask, request, jsonify, url_for
 from flask.views import MethodView
@@ -25,6 +27,7 @@ from jsonschema import validate
 from config import Config
 from models import db, Quiz, Category, Option, Question, QuizQuestion, QuizCategory
 
+
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
@@ -40,6 +43,8 @@ class CategoryConverter(BaseConverter):
         category = Category.query.filter(
             func.lower(Category.name) == name.lower()
         ).first()
+
+        print(f"Category name: {name}")
         if not category:
             raise ValueError(f"Category '{name}' not found")
         return category
@@ -56,12 +61,20 @@ class QuizConverter(BaseConverter):
 
     def to_python(self, value):
         """Convert and validate quiz ID to Quiz object."""
-        if len(value) != 36:
+        try:
+            # Attempt to validate as UUID
+            uuid_obj = uuid.UUID(value)
+            # If we get here, format is valid
+        except (ValueError, AttributeError, TypeError):
             raise ValueError("Invalid quiz ID format")
+            
+        # Now check if quiz exists
         quiz = Quiz.query.filter_by(unique_id=value).first()
         if not quiz:
             raise ValueError(f"Quiz '{value}' not found")
         return quiz
+
+
 
     def to_url(self, value):
         """Convert Quiz object or ID to URL string."""
@@ -107,7 +120,7 @@ class QuizNameConverter(BaseConverter):
 
     def to_url(self, value):
         """Convert Python string to URL-safe quiz name."""
-        return value
+        return quote(value)
 
 
 # Register all converters
@@ -181,6 +194,10 @@ question_schema = {
 }
 
 
+@app.errorhandler(ValueError)
+def handle_value_error(error):
+    """Handle ValueError exceptions."""
+    return jsonify({"msg": str(error)}), 404
 def validate_json(json_data, schema):
     """Validates the provided JSON data against the given JSON schema."""
     try:
@@ -291,6 +308,9 @@ class CategoryResource(MethodView):
         # Check for existing category - directly query instead of using converter
         if Category.query.filter(func.lower(Category.name) == name.lower()).first():
             return jsonify({"msg": "Category already exists"}), 400
+        # Check for empty name
+        if not name:
+            return jsonify({"msg": "Category name cannot be empty"}), 400
 
         new_category = Category(name=name)
         db.session.add(new_category)
@@ -342,7 +362,6 @@ class CategoryDetailResource(MethodView):
         old_name = category.name
         category.name = new_name
         db.session.commit()
-
         cache.delete("view//category")
         response = {"msg": "Category updated", "old_name": old_name, "new_name": new_name}
         return jsonify(add_hypermedia_links(response, "category", category)), 200
@@ -456,7 +475,7 @@ class QuizDetailResource(MethodView):
         quiz_category = QuizCategory.query.filter_by(quiz_id=quiz.quiz_id).first()
         category_name = None
         if quiz_category:
-            category = Category.query.get(quiz_category.category_id)
+            category = db.session.get(Category, quiz_category.category_id)
             category_name = category.name if category else None
         
         response = {
@@ -579,11 +598,13 @@ class QuestionResource(MethodView):
 
         # Ensure at least one option is marked as correct
         has_correct_option = False
+        if not options:
+            return jsonify({"msg": "At least one option must be provided"}), 400
         for opt in options:
             if opt.get("is_correct", False):
                 has_correct_option = True
                 break
-                
+        
         if not has_correct_option and options:
             return jsonify({"msg": "At least one option must be marked as correct"}), 400
 
@@ -626,7 +647,7 @@ class QuestionResource(MethodView):
 
             quiz_unique_id = None
             if quiz_question:
-                quiz = Quiz.query.get(quiz_question.quiz_id)
+                quiz = db.session.get(Quiz, quiz_question.quiz_id)
                 quiz_unique_id = quiz.unique_id if quiz else None
 
             question_list.append(
@@ -666,7 +687,7 @@ class QuestionDetailResource(MethodView):
         
         quiz_unique_id = None
         if quiz_question:
-            quiz = Quiz.query.get(quiz_question.quiz_id)
+            quiz = db.session.get(Quiz, quiz_question.quiz_id)
             quiz_unique_id = quiz.unique_id if quiz else None
 
         question_data = {
