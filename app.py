@@ -65,7 +65,7 @@ class QuizConverter(BaseConverter):
         """Convert and validate quiz ID to Quiz object."""
         try:
             # Attempt to validate as UUID
-            uuid_obj = uuid.UUID(value)
+            uuid.UUID(value)
             # If we get here, format is valid
         except (ValueError, AttributeError, TypeError):
             raise ValueError("Invalid quiz ID format")
