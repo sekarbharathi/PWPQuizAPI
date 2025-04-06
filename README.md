@@ -64,7 +64,7 @@ Database initialization is handled in init_db.py
 
 To initialize the database,run:
 
-    python init_db.py
+    python database.py
 
 
 **Populating the Database**
@@ -73,7 +73,7 @@ To initialize the database,run:
 
 To insert sample data (categories, quizzes, questions, and options), run:
 
-    python generate_db.py
+    python populatepy
 
 This script will:
 
@@ -111,50 +111,55 @@ POST /login: Authenticate and get a JWT token.
 
 #### Categories
 
-GET /category: Get all categories.
+GET /category - List all categories  
 
-POST /category: Create a new category (Admin only).
+POST /category - Create category (Admin)
 
-PUT /category/int:category_id: Update a category (Admin only).
+PUT /category/<category_name> - Update category (Admin)  
 
-DELETE /category/int:category_id: Delete a category (Admin only).
+DELETE /category/<category_name> - Delete category (Admin)
 
 #### Quizzes
 
-GET /quiz: Get all quizzes.
+GET /quiz - List all quizzes
 
-POST /quiz: Create a new quiz (Admin only).
+POST /quiz - Create quiz (Admin)
 
-PUT /quiz/int:quiz_id: Update a quiz (Admin only).
+PUT /quiz/<quiz_unique_id> - Update quiz (Admin)
 
-DELETE /quiz/int:quiz_id: Delete a quiz (Admin only).
+DELETE /quiz/<quiz_unique_id> - Delete quiz (Admin)
 
 #### Questions
 
-POST /question: Create a new question (Admin only).
+GET /question - List all questions
 
-PUT /question/int:question_id: Update a question (Admin only).
+GET /question/<question_unique_id> - Get question details
 
-GET /question: Get all questions.
+POST /question - Create question (Admin)  
 
-GET /question/int:question_id: Get a specific question.
+PUT /question/<question_unique_id> - Update question (Admin)
 
-DELETE /question/int:question_id: Delete a question (Admin only).
+DELETE /question/<question_unique_id> - Delete question (Admin)
+
 
 #### Filtering
 
-GET /category/<category>/quiz/<quiz>/all: Get all questions for a specific quiz under a category.
+GET /category/<category_name>/quizzes - Get quizzes by category
 
-GET /category/<category>/quiz/<quiz>/questions: Get filtered questions for a quiz.
+GET /quiz/<quiz_unique_id>/questions - Get questions by quiz
 
-GET /quiz/category/int:category_id: Get quizzes by category ID.
+GET /category/<category_name>/quiz/<quiz_name>/all - Get all quiz questions  
 
-GET /quiz/int:quiz_id/questions: Get questions by quiz ID.
+GET /category/<category_name>/quiz/<quiz_name>/questions?question_count=%&complex_level=% - Get filtered questions with parameters
 
-
-Test the API:
+### Test the API:
 
 Use tools like Postman or curl to test the endpoints.
+
+### API Documentation
+
+View the complete API documentation in Swagger Editor: quiz-api-docs.yaml
+
 
 ### Running Tests
 
