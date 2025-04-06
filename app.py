@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+
 """
 This module defines a Flask application with various routes
 for managing quizzes, categories, and questions.
@@ -67,14 +69,12 @@ class QuizConverter(BaseConverter):
             # If we get here, format is valid
         except (ValueError, AttributeError, TypeError):
             raise ValueError("Invalid quiz ID format")
-            
+
         # Now check if quiz exists
         quiz = Quiz.query.filter_by(unique_id=value).first()
         if not quiz:
             raise ValueError(f"Quiz '{value}' not found")
         return quiz
-
-
 
     def to_url(self, value):
         """Convert Quiz object or ID to URL string."""
@@ -128,8 +128,8 @@ app.url_map.converters["category"] = CategoryConverter
 app.url_map.converters["quiz"] = QuizConverter
 app.url_map.converters["question"] = QuestionConverter
 app.url_map.converters["complexity"] = ComplexityConverter
-app.url_map.converters['category_str'] = BaseConverter  # Simple string converter
-app.url_map.converters['quiz_str'] = BaseConverter 
+app.url_map.converters["category_str"] = BaseConverter  # Simple string converter
+app.url_map.converters["quiz_str"] = BaseConverter
 
 # JWT setup
 app.config["JWT_SECRET_KEY"] = "quiz-api-key"
@@ -137,10 +137,10 @@ jwt = JWTManager(app)
 
 # Flask-Caching setup
 # Update Flask-Caching config
-app.config['CACHE_TYPE'] = 'SimpleCache'
-app.config['CACHE_DEFAULT_TIMEOUT'] = 300
-app.config['CACHE_THRESHOLD'] = 100
-app.config['CACHE_KEY_PREFIX'] = 'quiz_api_'
+app.config["CACHE_TYPE"] = "SimpleCache"
+app.config["CACHE_DEFAULT_TIMEOUT"] = 300
+app.config["CACHE_THRESHOLD"] = 100
+app.config["CACHE_KEY_PREFIX"] = "quiz_api_"
 cache = Cache(app)
 
 # List of objects to export
@@ -198,6 +198,8 @@ question_schema = {
 def handle_value_error(error):
     """Handle ValueError exceptions."""
     return jsonify({"msg": str(error)}), 404
+
+
 def validate_json(json_data, schema):
     """Validates the provided JSON data against the given JSON schema."""
     try:
@@ -206,30 +208,38 @@ def validate_json(json_data, schema):
         return False, err.message
     return True, None
 
+
 def add_hypermedia_links(data, resource_type, resource_id=None):
     """Add hypermedia links to API responses."""
     if isinstance(data, dict):
         links = {}
-        
+
         # Add self link
         if resource_id:
-            links["self"] = url_for(f"{resource_type}_detail", **{resource_type: resource_id}, _external=True)
+            links["self"] = url_for(
+                f"{resource_type}_detail",
+                **{resource_type: resource_id},
+                _external=True,
+            )
         else:
             links["self"] = url_for(resource_type, _external=True)
-            
+
         # Add collection link if we're looking at a specific resource
         if resource_id:
             links["collection"] = url_for(resource_type, _external=True)
-            
+
         # Add resource-specific links
         if resource_type == "category" and resource_id:
-            links["quizzes"] = url_for("quizzes_by_category", category=resource_id, _external=True)
+            links["quizzes"] = url_for(
+                "quizzes_by_category", category=resource_id, _external=True
+            )
         elif resource_type == "quiz" and resource_id:
-            links["questions"] = url_for("questions_by_quiz", quiz=resource_id, _external=True)
-            
+            links["questions"] = url_for(
+                "questions_by_quiz", quiz=resource_id, _external=True
+            )
+
         data["_links"] = links
     return data
-
 
 
 @app.before_request
@@ -243,6 +253,8 @@ def check_content_type():
 
 # Resources with updated parameter handling
 class LoginResource(MethodView):
+    """Handles user authentication and JWT token generation."""
+
     def post(self):
         """Authenticates the user and generates an access token."""
         data = request.get_json()
@@ -262,12 +274,13 @@ class LoginResource(MethodView):
 
 
 class CategoryResource(MethodView):
-    
+    """Manages category collection (list all and create new)."""
+
     @cache.cached(timeout=300, key_prefix="view//category")
     def get(self):
         """Retrieves all categories from the database with hypermedia links."""
         categories = Category.query.all()
-        
+
         # Create a list of categories with individual hypermedia links
         categories_data = []
         for cat in categories:
@@ -277,20 +290,21 @@ class CategoryResource(MethodView):
                 # Add hypermedia links specific to this category
                 "_links": {
                     "self": url_for("category_detail", category=cat, _external=True),
-                    "quizzes": url_for("quizzes_by_category", category=cat, _external=True)
-                }
+                    "quizzes": url_for(
+                        "quizzes_by_category", category=cat, _external=True
+                    ),
+                },
             }
             categories_data.append(cat_data)
-        
+
         # Add collection-level hypermedia
         response = {
             "categories": categories_data,
-            "_links": {
-                "self": url_for("category", _external=True)
-            }
+            "_links": {"self": url_for("category", _external=True)},
         }
-        
+
         return jsonify(response), 200
+
     @jwt_required()
     def post(self):
         """Creates a new category in the database."""
@@ -321,11 +335,12 @@ class CategoryResource(MethodView):
         return jsonify(add_hypermedia_links(response, "category", name)), 201
 
 
-
 class CategoryDetailResource(MethodView):
+    """Handles operations for individual category resources (read, update, delete)."""
+
     def get(self, category):
         """Retrieves details of a specific category.
-        
+
         The category parameter is already a Category object from the converter.
         """
         response = {
@@ -337,7 +352,7 @@ class CategoryDetailResource(MethodView):
     @jwt_required()
     def put(self, category):
         """Updates the details of an existing category.
-        
+
         The category parameter is already a Category object from the converter.
         """
         current_user = get_jwt_identity()
@@ -355,7 +370,7 @@ class CategoryDetailResource(MethodView):
         existing_category = Category.query.filter(
             func.lower(Category.name) == new_name.lower()
         ).first()
-        
+
         if existing_category and existing_category.category_id != category.category_id:
             return jsonify({"msg": "Category name already exists"}), 400
 
@@ -363,13 +378,17 @@ class CategoryDetailResource(MethodView):
         category.name = new_name
         db.session.commit()
         cache.delete("view//category")
-        response = {"msg": "Category updated", "old_name": old_name, "new_name": new_name}
+        response = {
+            "msg": "Category updated",
+            "old_name": old_name,
+            "new_name": new_name,
+        }
         return jsonify(add_hypermedia_links(response, "category", category)), 200
 
     @jwt_required()
     def delete(self, category):
         """Deletes an existing category.
-        
+
         The category parameter is already a Category object from the converter.
         """
         current_user = get_jwt_identity()
@@ -377,10 +396,12 @@ class CategoryDetailResource(MethodView):
             return jsonify({"msg": "Unauthorized"}), 403
 
         category_name = category.name  # Store name before deletion
-        
+
         # Check if category is in use by any quizzes - no need to query category again
-        quiz_categories = QuizCategory.query.filter_by(category_id=category.category_id).first()
-        
+        quiz_categories = QuizCategory.query.filter_by(
+            category_id=category.category_id
+        ).first()
+
         if quiz_categories:
             return jsonify({"msg": "Cannot delete category in use by quizzes"}), 400
 
@@ -392,13 +413,14 @@ class CategoryDetailResource(MethodView):
         return jsonify(add_hypermedia_links(response, "category")), 200
 
 
-
 class QuizResource(MethodView):
+    """Handles operations for the quiz collection (list all and create new)."""
+
     @cache.cached(timeout=300, key_prefix="view//quiz")
     def get(self):
         """Retrieves all quizzes from the database with hypermedia links."""
         quizzes = Quiz.query.all()
-        
+
         # Create a list of quizzes with individual hypermedia links
         quizzes_list = []
         for quiz in quizzes:
@@ -410,19 +432,19 @@ class QuizResource(MethodView):
                 # Add hypermedia links specific to this quiz
                 "_links": {
                     "self": url_for("quiz_detail", quiz=quiz, _external=True),
-                    "questions": url_for("questions_by_quiz", quiz=quiz, _external=True)
-                }
+                    "questions": url_for(
+                        "questions_by_quiz", quiz=quiz, _external=True
+                    ),
+                },
             }
             quizzes_list.append(quiz_data)
-        
+
         # Add collection-level hypermedia
         response = {
             "quizzes": quizzes_list,
-            "_links": {
-                "self": url_for("quiz", _external=True)
-            }
+            "_links": {"self": url_for("quiz", _external=True)},
         }
-        
+
         return jsonify(response), 200
 
     @jwt_required()
@@ -466,9 +488,11 @@ class QuizResource(MethodView):
 
 
 class QuizDetailResource(MethodView):
+    """Handles operations for individual quiz resources (read, update, delete)."""
+
     def get(self, quiz):
         """Retrieves details of a specific quiz.
-        
+
         The quiz parameter is already a Quiz object from the converter.
         """
         # Get category for this quiz - using direct join instead of multiple queries
@@ -477,19 +501,19 @@ class QuizDetailResource(MethodView):
         if quiz_category:
             category = db.session.get(Category, quiz_category.category_id)
             category_name = category.name if category else None
-        
+
         response = {
             "unique_id": quiz.unique_id,
             "name": quiz.name,
             "description": quiz.description,
-            "category": category_name
+            "category": category_name,
         }
         return jsonify(add_hypermedia_links(response, "quiz", quiz)), 200
-        
+
     @jwt_required()
     def put(self, quiz):
         """Updates the details of an existing quiz.
-        
+
         The quiz parameter is already a Quiz object from the converter.
         """
         current_user = get_jwt_identity()
@@ -528,7 +552,7 @@ class QuizDetailResource(MethodView):
     @jwt_required()
     def delete(self, quiz):
         """Deletes an existing quiz.
-        
+
         The quiz parameter is already a Quiz object from the converter.
         """
         current_user = get_jwt_identity()
@@ -537,21 +561,21 @@ class QuizDetailResource(MethodView):
 
         # Delete related records first - no need to query quiz again
         QuizCategory.query.filter_by(quiz_id=quiz.quiz_id).delete()
-        
+
         # Get all questions for this quiz
         quiz_questions = QuizQuestion.query.filter_by(quiz_id=quiz.quiz_id).all()
         question_ids = [qq.question_id for qq in quiz_questions]
-        
+
         # Delete quiz-question associations
         QuizQuestion.query.filter_by(quiz_id=quiz.quiz_id).delete()
-        
+
         # Delete orphaned questions and their options
         for question_id in question_ids:
             # Check if question is used by other quizzes
             if not QuizQuestion.query.filter_by(question_id=question_id).first():
                 Option.query.filter_by(question_id=question_id).delete()
                 Question.query.filter_by(question_id=question_id).delete()
-        
+
         # Finally delete the quiz
         db.session.delete(quiz)
         db.session.commit()
@@ -561,8 +585,9 @@ class QuizDetailResource(MethodView):
         return jsonify(add_hypermedia_links(response, "quiz")), 200
 
 
-
 class QuestionResource(MethodView):
+    """Handles operations for the question collection (list all and create new)."""
+
     @jwt_required()
     def post(self):
         """Creates a new question along with its options."""
@@ -604,9 +629,12 @@ class QuestionResource(MethodView):
             if opt.get("is_correct", False):
                 has_correct_option = True
                 break
-        
+
         if not has_correct_option and options:
-            return jsonify({"msg": "At least one option must be marked as correct"}), 400
+            return (
+                jsonify({"msg": "At least one option must be marked as correct"}),
+                400,
+            )
 
         for opt in options:
             new_option = Option(
@@ -665,9 +693,11 @@ class QuestionResource(MethodView):
 
 
 class QuestionDetailResource(MethodView):
+    """Handles operations for individual question resources (read, update, delete)."""
+
     def get(self, question):
         """Retrieves a specific question by its unique_id.
-        
+
         The question parameter is already a Question object from the converter.
         """
         options = Option.query.filter_by(question_id=question.question_id).all()
@@ -684,7 +714,7 @@ class QuestionDetailResource(MethodView):
         quiz_question = QuizQuestion.query.filter_by(
             question_id=question.question_id
         ).first()
-        
+
         quiz_unique_id = None
         if quiz_question:
             quiz = db.session.get(Quiz, quiz_question.quiz_id)
@@ -703,7 +733,7 @@ class QuestionDetailResource(MethodView):
     @jwt_required()
     def put(self, question):
         """Updates an existing question and its options.
-        
+
         The question parameter is already a Question object from the converter.
         """
         current_user = get_jwt_identity()
@@ -751,10 +781,13 @@ class QuestionDetailResource(MethodView):
                 if opt.get("is_correct", False):
                     has_correct_option = True
                     break
-                    
+
             if not has_correct_option and data["options"]:
-                return jsonify({"msg": "At least one option must be marked as correct"}), 400
-                
+                return (
+                    jsonify({"msg": "At least one option must be marked as correct"}),
+                    400,
+                )
+
             Option.query.filter_by(question_id=question.question_id).delete()
             for opt in data["options"]:
                 new_option = Option(
@@ -771,7 +804,7 @@ class QuestionDetailResource(MethodView):
     @jwt_required()
     def delete(self, question):
         """Deletes a specific question and its related records.
-        
+
         The question parameter is already a Question object from the converter.
         """
         current_user = get_jwt_identity()
@@ -789,6 +822,8 @@ class QuestionDetailResource(MethodView):
 
 
 class CategoryQuizQuestionsResource(MethodView):
+    """Handles retrieval of all questions for a specific quiz in a category."""
+
     def get(self, category_name, quiz_name):  # Changed parameter names to be explicit
         """Retrieves all questions for a specific quiz under a given category."""
         # Get category by name (string)
@@ -799,16 +834,13 @@ class CategoryQuizQuestionsResource(MethodView):
             return jsonify({"msg": "Category not found"}), 404
 
         # Get quiz by name (string)
-        quiz = Quiz.query.filter(
-            func.lower(Quiz.name) == quiz_name.lower()
-        ).first()
+        quiz = Quiz.query.filter(func.lower(Quiz.name) == quiz_name.lower()).first()
         if not quiz:
             return jsonify({"msg": "Quiz not found"}), 404
 
         # Verify quiz belongs to category
         quiz_category = QuizCategory.query.filter_by(
-            quiz_id=quiz.quiz_id,
-            category_id=category.category_id
+            quiz_id=quiz.quiz_id, category_id=category.category_id
         ).first()
         if not quiz_category:
             return jsonify({"msg": "Quiz not found in this category"}), 404
@@ -825,29 +857,41 @@ class CategoryQuizQuestionsResource(MethodView):
         questions_list = []
         for q in questions:
             options = Option.query.filter_by(question_id=q.question_id).all()
-            questions_list.append({
-                "unique_id": q.unique_id,
-                "question_statement": q.question_statement,
-                "complex_level": q.complex_level,
-                "options": [
-                    {
-                        "unique_id": opt.unique_id,
-                        "statement": opt.option_statement,
-                        "is_correct": opt.is_correct,
-                    } for opt in options
-                ]
-            })
+            questions_list.append(
+                {
+                    "unique_id": q.unique_id,
+                    "question_statement": q.question_statement,
+                    "complex_level": q.complex_level,
+                    "options": [
+                        {
+                            "unique_id": opt.unique_id,
+                            "statement": opt.option_statement,
+                            "is_correct": opt.is_correct,
+                        }
+                        for opt in options
+                    ],
+                }
+            )
 
-        return jsonify({
-            "category": category.name,
-            "quiz": quiz.name,
-            "description": quiz.description,
-            "questions": questions_list
-        }), 200
+        return (
+            jsonify(
+                {
+                    "category": category.name,
+                    "quiz": quiz.name,
+                    "description": quiz.description,
+                    "questions": questions_list,
+                }
+            ),
+            200,
+        )
+
+
 class QuizByCategoryResource(MethodView):
+    """Handles retrieval of all quizzes belonging to a specific category."""
+
     def get(self, category):
         """Retrieves all quizzes for a given category name.
-        
+
         The category parameter is already a Category object from the converter.
         """
         # No need to query category again - use the provided category object
@@ -867,23 +911,23 @@ class QuizByCategoryResource(MethodView):
             for quiz in quizzes
         ]
 
-        response = {
-            "category": category.name,
-            "quizzes": quizzes_list
-        }
-        
+        response = {"category": category.name, "quizzes": quizzes_list}
+
         return jsonify(add_hypermedia_links(response, "category", category)), 200
 
 
 class FilteredQuizQuestionsResource(MethodView):
+    """Handles filtered questions for a specific quiz with complexity level."""
     def get(self, category_name, quiz_name):
         """Retrieves filtered questions for a specific quiz with hypermedia."""
         # Get query parameters
-        question_count = request.args.get('question_count', default=5, type=int)
-        complex_level = request.args.get('complex_level', default='medium', type=str).lower()
-        
+        question_count = request.args.get("question_count", default=5, type=int)
+        complex_level = request.args.get(
+            "complex_level", default="medium", type=str
+        ).lower()
+
         # Validate complexity level
-        if complex_level not in ['easy', 'medium', 'hard']:
+        if complex_level not in ["easy", "medium", "hard"]:
             return jsonify({"msg": "Invalid complexity level"}), 400
 
         # Get category by name
@@ -894,16 +938,13 @@ class FilteredQuizQuestionsResource(MethodView):
             return jsonify({"msg": "Category not found"}), 404
 
         # Get quiz by name
-        quiz = Quiz.query.filter(
-            func.lower(Quiz.name) == quiz_name.lower()
-        ).first()
+        quiz = Quiz.query.filter(func.lower(Quiz.name) == quiz_name.lower()).first()
         if not quiz:
             return jsonify({"msg": "Quiz not found"}), 404
 
         # Verify quiz belongs to category
         quiz_category = QuizCategory.query.filter_by(
-            quiz_id=quiz.quiz_id,
-            category_id=category.category_id
+            quiz_id=quiz.quiz_id, category_id=category.category_id
         ).first()
         if not quiz_category:
             return jsonify({"msg": "Quiz not found in this category"}), 404
@@ -914,7 +955,7 @@ class FilteredQuizQuestionsResource(MethodView):
             .join(QuizQuestion)
             .filter(
                 QuizQuestion.quiz_id == quiz.quiz_id,
-                Question.complex_level == complex_level
+                Question.complex_level == complex_level,
             )
             .order_by(func.random())  # Random ordering
             .limit(question_count)
@@ -934,11 +975,12 @@ class FilteredQuizQuestionsResource(MethodView):
                         "unique_id": opt.unique_id,
                         "statement": opt.option_statement,
                         "is_correct": opt.is_correct,
-                    } for opt in options
+                    }
+                    for opt in options
                 ],
                 "_links": {
                     "self": url_for("question_detail", question=q, _external=True)
-                }
+                },
             }
             questions_list.append(question_data)
 
@@ -948,19 +990,25 @@ class FilteredQuizQuestionsResource(MethodView):
             "question_count": len(questions_list),
             "questions": questions_list,
             "_links": {
-                "self": url_for("filtered_quiz_questions", 
-                               category_name=category_name, 
-                               quiz_name=quiz_name, 
-                               _external=True),
-                "all_questions": url_for("category_quiz_questions", 
-                                       category_name=category_name, 
-                                       quiz_name=quiz_name, 
-                                       _external=True),
-                "category": url_for("category_detail", category=category, _external=True),
-                "quiz": url_for("quiz_detail", quiz=quiz, _external=True)
-            }
+                "self": url_for(
+                    "filtered_quiz_questions",
+                    category_name=category_name,
+                    quiz_name=quiz_name,
+                    _external=True,
+                ),
+                "all_questions": url_for(
+                    "category_quiz_questions",
+                    category_name=category_name,
+                    quiz_name=quiz_name,
+                    _external=True,
+                ),
+                "category": url_for(
+                    "category_detail", category=category, _external=True
+                ),
+                "quiz": url_for("quiz_detail", quiz=quiz, _external=True),
+            },
         }
-        
+
         return jsonify(response), 200
 
     @jwt_required()
@@ -978,23 +1026,20 @@ class FilteredQuizQuestionsResource(MethodView):
             return jsonify({"msg": "Category not found"}), 404
 
         # Get quiz by name
-        quiz = Quiz.query.filter(
-            func.lower(Quiz.name) == quiz_name.lower()
-        ).first()
+        quiz = Quiz.query.filter(func.lower(Quiz.name) == quiz_name.lower()).first()
         if not quiz:
             return jsonify({"msg": "Quiz not found"}), 404
 
         # Verify quiz belongs to category
         quiz_category = QuizCategory.query.filter_by(
-            quiz_id=quiz.quiz_id,
-            category_id=category.category_id
+            quiz_id=quiz.quiz_id, category_id=category.category_id
         ).first()
         if not quiz_category:
             return jsonify({"msg": "Quiz not found in this category"}), 404
 
         # Process the question data
         data = request.get_json()
-        
+
         # Define a modified schema that doesn't require quiz_unique_id
         modified_question_schema = {
             "type": "object",
@@ -1015,7 +1060,7 @@ class FilteredQuizQuestionsResource(MethodView):
             },
             "required": ["question_statement", "complex_level", "options"],
         }
-        
+
         is_valid, error_message = validate_json(data, modified_question_schema)
         if not is_valid:
             return jsonify({"msg": f"Invalid request: {error_message}"}), 400
@@ -1042,9 +1087,12 @@ class FilteredQuizQuestionsResource(MethodView):
             if opt.get("is_correct", False):
                 has_correct_option = True
                 break
-                
+
         if not has_correct_option and options:
-            return jsonify({"msg": "At least one option must be marked as correct"}), 400
+            return (
+                jsonify({"msg": "At least one option must be marked as correct"}),
+                400,
+            )
 
         # Add options
         for opt in options:
@@ -1069,21 +1117,23 @@ class FilteredQuizQuestionsResource(MethodView):
             "quiz_name": quiz.name,
             "question_id": new_question.unique_id,
             "_links": {
-                "self": url_for("filtered_quiz_questions", 
-                                category_name=category_name, 
-                                quiz_name=quiz_name, 
-                                _external=True),
+                "self": url_for(
+                    "filtered_quiz_questions",
+                    category_name=category_name,
+                    quiz_name=quiz_name,
+                    _external=True,
+                ),
                 "category": url_for("category", _external=True),
-                "quiz": url_for("quiz", _external=True)
-            }
+                "quiz": url_for("quiz", _external=True),
+            },
         }
-        
+
         return jsonify(response), 201
 
 
-
-
 class QuestionsByQuizResource(MethodView):
+    """Handles retrieval of all questions for a specific quiz."""
+
     def get(self, quiz):  # Receives Quiz object
         """Retrieves all questions for a specific quiz with hypermedia links."""
         questions = (
@@ -1103,7 +1153,7 @@ class QuestionsByQuizResource(MethodView):
                 }
                 for opt in options
             ]
-            
+
             # Add question-specific links
             question_data = {
                 "unique_id": q.unique_id,
@@ -1113,7 +1163,7 @@ class QuestionsByQuizResource(MethodView):
                 "_links": {
                     "self": url_for("question_detail", question=q, _external=True),
                     "quiz": url_for("quiz_detail", quiz=quiz, _external=True),
-                }
+                },
             }
             questions_list.append(question_data)
 
@@ -1127,11 +1177,10 @@ class QuestionsByQuizResource(MethodView):
             "_links": {
                 "self": url_for("questions_by_quiz", quiz=quiz, _external=True),
                 "quiz": url_for("quiz_detail", quiz=quiz, _external=True),
-            }
+            },
         }
-        
-        return jsonify(response), 200
 
+        return jsonify(response), 200
 
 
 # Register all routes with updated converters
@@ -1142,7 +1191,7 @@ app.add_url_rule(
 app.add_url_rule(
     "/category/<category:category>",
     view_func=CategoryDetailResource.as_view("category_detail"),
-    methods=["GET","PUT", "DELETE"],
+    methods=["GET", "PUT", "DELETE"],
 )
 app.add_url_rule(
     "/quiz", view_func=QuizResource.as_view("quiz"), methods=["GET", "POST"]
@@ -1150,7 +1199,7 @@ app.add_url_rule(
 app.add_url_rule(
     "/quiz/<quiz:quiz>",
     view_func=QuizDetailResource.as_view("quiz_detail"),
-    methods=["GET","PUT", "DELETE"],
+    methods=["GET", "PUT", "DELETE"],
 )
 app.add_url_rule(
     "/question",
@@ -1163,14 +1212,14 @@ app.add_url_rule(
     methods=["GET", "PUT", "DELETE"],
 )
 app.add_url_rule(
-    '/category/<category_str:category_name>/quiz/<quiz_str:quiz_name>/all',
-    view_func=CategoryQuizQuestionsResource.as_view('category_quiz_questions'),
-    methods=['GET']
+    "/category/<category_str:category_name>/quiz/<quiz_str:quiz_name>/all",
+    view_func=CategoryQuizQuestionsResource.as_view("category_quiz_questions"),
+    methods=["GET"],
 )
 app.add_url_rule(
-    '/category/<category_str:category_name>/quiz/<quiz_str:quiz_name>/questions',
-    view_func=FilteredQuizQuestionsResource.as_view('filtered_quiz_questions'),
-    methods=['GET','POST']
+    "/category/<category_str:category_name>/quiz/<quiz_str:quiz_name>/questions",
+    view_func=FilteredQuizQuestionsResource.as_view("filtered_quiz_questions"),
+    methods=["GET", "POST"],
 )
 app.add_url_rule(
     "/category/<category:category>/quizzes",
