@@ -26,8 +26,8 @@ from sqlalchemy import func
 import jsonschema
 from jsonschema import validate
 
-from config import Config
-from models import db, Quiz, Category, Option, Question, QuizQuestion, QuizCategory
+from app.config import Config 
+from app.models import db, Quiz, Category, Option, Question, QuizQuestion, QuizCategory
 
 
 app = Flask(__name__)
@@ -1234,3 +1234,4 @@ app.add_url_rule(
 
 if __name__ == "__main__":
     app.run(debug=True)
+

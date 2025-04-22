@@ -1,5 +1,6 @@
 import os
 import sys
+from app.app import app
 import pytest
 import uuid
 import json
@@ -9,8 +10,8 @@ from flask import url_for
 # Add the parent directory to the path to ensure imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + "/.."))
 
-from app import app, db, cache
-from models import Quiz, Category, Option, Question, QuizQuestion, QuizCategory
+from app.app import db, cache
+from app.models import Quiz, Category, Option, Question, QuizQuestion, QuizCategory
 
 from urllib.parse import quote
 
@@ -592,7 +593,7 @@ def test_complexity_converter(client):
 # Additional validation tests
 def test_validate_json_function(client):
     """Test the validate_json function directly."""
-    from app import validate_json, login_schema
+    from app.app import validate_json, login_schema
     
     # Valid data
     valid_data = {"username": "test", "password": "test123"}
@@ -615,7 +616,7 @@ def test_validate_json_function(client):
 
 def test_add_hypermedia_links_function(client):
     """Test the add_hypermedia_links function directly."""
-    from app import add_hypermedia_links
+    from app.app import add_hypermedia_links
     
     with client.application.app_context():
         # Test adding links to a resource without ID
@@ -648,7 +649,7 @@ def test_value_error_handler(client):
     # The handler is tested indirectly in other tests, but we can test it directly
     # by causing a ValueError in the application context
     with client.application.app_context():
-        from app import handle_value_error
+        from app.app import handle_value_error
         response, status_code = handle_value_error(ValueError("Test error message"))
         assert status_code == 404
         assert response.json["msg"] == "Test error message"
