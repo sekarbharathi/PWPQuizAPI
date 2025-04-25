@@ -1,0 +1,22 @@
+FROM nginx:alpine
+
+# Support running as arbitrary user which belongs to the root group
+RUN chmod g+rwx /var/cache/nginx /var/run /var/log/nginx && \
+    chown nginx:root /var/cache/nginx /var/run /var/log/nginx && \
+    # Make it possible for nginx user to replace default.conf when launched
+    chmod -R g+rwX /etc/nginx/conf.d && \
+    chown -R nginx:root /etc/nginx/conf.d && \
+    # Comment user directive as master process is run as user in OpenShift
+    # Comment server_names_hash_bucket_size if set
+    # Then add it and set to 128 to support the long hostnames given by Azure
+    sed -i.bak -e 's/^user/#user/' \
+               -e 's/^(\s*)server_names_hash_bucket_size/\1# server_names_hash_bucket_size/' \
+               -e 's/http {/http {\n    server_names_hash_bucket_size 128;/' \
+               /etc/nginx/nginx.conf
+
+COPY default.conf.template /etc/nginx/templates/
+
+WORKDIR /usr/share/nginx/html/
+EXPOSE 8080
+
+USER nginx:root

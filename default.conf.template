@@ -1,0 +1,10 @@
+server {
+    listen 8080;
+    server_name ${HOSTNAME};
+
+    location / {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}

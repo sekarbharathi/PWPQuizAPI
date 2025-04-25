@@ -1,0 +1,26 @@
+services:
+  quizapp-flask:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - quizapp-data:/opt/quizapp/instance
+    networks:
+      - quizapp-network
+  quizapp-nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    ports:
+      - "80:8080"
+    depends_on:
+      - quizapp-flask
+    environment:
+      - HOSTNAME=localhost
+    networks:
+      - quizapp-network
+networks:
+  quizapp-network:
+    driver: bridge
+volumes:
+  quizapp-data:
