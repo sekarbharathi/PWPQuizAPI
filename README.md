@@ -166,3 +166,20 @@ View the complete API documentation in Swagger Editor: quiz-api-docs.yaml
 To run the tests and check coverage, use the following command:
 
     python -m pytest --cov=app --cov-report=term-missing
+
+# Deployment
+The Quiz API can be deployed to Azure for reliability and scalability
+
+## Main Components
+
+| Component | Role & Functionality | Necessity & Alternatives |
+|-----------|----------------------|--------------------------|
+| **Docker** | Containerization platform that packages the application and its dependencies, ensuring consistent environments across development and production. | **Necessity**: Provides isolation, consistency, and portability.<br>**Alternatives**: Virtual machines, traditional server deployments. |
+| **Azure Container Registry (ACR)** | Private registry service for storing and managing Docker container images. | **Necessity**: Securely stores container images close to the deployment environment.<br>**Alternatives**: Docker Hub, Amazon ECR, GitHub Container Registry. |
+| **Kubernetes (AKS)** | Container orchestration system managing deployment, scaling, and operations of application containers. | **Necessity**: Automates container management, provides scalability.<br>**Alternatives**: Docker Swarm, Amazon ECS. |
+| **Flask** | Python web framework used to build the Quiz API application. | **Necessity**: Provides routing, request handling, and application structure.<br>**Alternatives**: Django, FastAPI. |
+| **Gunicorn** | WSGI HTTP server for running Python web applications, serving as the application server. | **Necessity**: Manages worker processes efficiently.<br>**Alternatives**: uWSGI, Waitress. |
+| **Supervisor** | Process control system for monitoring and controlling Gunicorn. | **Necessity**: Ensures application reliability by monitoring and auto-restarting processes.<br>**Alternatives**: systemd, Docker's restart policies. |
+| **Nginx** | Web server acting as a reverse proxy in front of Gunicorn. | **Necessity**: Efficiently handles HTTP requests, provides buffering.<br>**Alternatives**: Apache HTTP Server, Caddy. |
+
+
