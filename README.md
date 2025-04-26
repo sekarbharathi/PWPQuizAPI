@@ -182,4 +182,13 @@ The Quiz API can be deployed to Azure for reliability and scalability
 | **Supervisor** | Process control system for monitoring and controlling Gunicorn. | **Necessity**: Ensures application reliability by monitoring and auto-restarting processes.<br>**Alternatives**: systemd, Docker's restart policies. |
 | **Nginx** | Web server acting as a reverse proxy in front of Gunicorn. | **Necessity**: Efficiently handles HTTP requests, provides buffering.<br>**Alternatives**: Apache HTTP Server, Caddy. |
 
+## Before deploying ensure that you have:
+- Azure CLI installed, have all required access to azure services like: AKS, ACR ...
+- Docker installed
+- kubectl installed
+## Deployment Steps
 
+Execute the deployment script: source deploy-to-azure.sh
+
+## Cleanup
+Execute the clean up script: source clean-azure.sh
