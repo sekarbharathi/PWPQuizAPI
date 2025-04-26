@@ -170,6 +170,9 @@ To run the tests and check coverage, use the following command:
 # Deployment
 The Quiz API can be deployed to Azure for reliability and scalability
 
+## Architect
+![image](https://github.com/user-attachments/assets/b103638d-8401-4e8b-845d-0945e5bfd1e6)
+
 ## Main Components
 
 | Component | Role & Functionality | Necessity & Alternatives |
