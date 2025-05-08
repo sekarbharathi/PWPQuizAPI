@@ -42,10 +42,10 @@
 
 ### Minutes
 
-* **Database Design**
-Add uniquely identifying strings (e.g., UUIDs) to most tables except for the Category table where it's not necessary.
+* **Database Design:**
+* Add uniquely identifying strings (e.g., UUIDs) to most tables except for the Category table where it's not necessary.
 
-* **Database Models**
+* **Database Models:**
 Relationships are not fully implemented. Foreign key constraints are missing at the database level and this should be defined explicitly in the schema (e.g., via ForeignKey declarations).
 
 ### Action points
@@ -97,31 +97,47 @@ Relationships are not fully implemented. Foreign key constraints are missing at 
 * Optionally improve logging and error handling for robustness and potential bonus marks.
 
 
-
-
-## Meeting 4.
-* **DATE:**
-* **ASSISTANTS:**
+## Meeting 4 and Midterm meeting
+* **DATE: 22.04.2025**
+* **ASSISTANTS: Mika Oja**
 
 ### Minutes
-*Summary of what was discussed during the meeting*
+
+* Feedback on the PWP project documentation was reviewed in detail.
+
+* Structural issues in the API documentation were pointed out, especially missing parameter definitions in components.
+
+* Missing response codes, such as for invalid media types, were noted.
+
+* Hypermedia design aspects were discussed, including missing custom link relations and lack of backward links.
+
+* Hypermedia implementation was found to be incomplete as existing links lacked method and schema information for non-GET actions.
+
+* Testing issues were discussed as tests could not be run properly from the root directory.
+
+* Suggestions for improving hypermedia control, link relations, and overall connectedness were provided.
+
+
 
 ### Action points
-*List here the actions points discussed with assistants*
 
+* Move reusable parameters to the components section in the OpenAPI documentation.
 
+* Add missing response codes, including invalid media type errors.
 
+* Add custom link relations to enhance hypermedia design.
 
-## Midterm meeting
-* **DATE:**
-* **ASSISTANTS:**
+* Implement backward relations to improve API connectedness.
 
-### Minutes
-*Summary of what was discussed during the meeting*
+* Include method and schema information in hypermedia links, especially for non-GET actions.
 
-### Action points
-*List here the actions points discussed with assistants*
+* Expand the use of links to more accurately reflect the hypermedia state diagram.
 
+* Ensure all tests can be run from the project’s root directory.
+
+* Validate that hypermedia-related behavior is properly tested.
+
+* Re-evaluate HAL usage and consider alternatives if it limits hypermedia expressiveness.
 
 
 
