@@ -166,3 +166,6 @@ View the complete API documentation in Swagger Editor: quiz-api-docs.yaml
 To run the tests and check coverage, use the following command:
 
     python -m pytest --cov=app --cov-report=term-missing
+
+
+FLASK_APP=app.app FLASK_ENV=development flask run

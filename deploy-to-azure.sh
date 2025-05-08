@@ -29,23 +29,9 @@ az acr login --name $ACR_NAME
 
 # Build the Flask Docker image from root Dockerfile
 docker build --platform linux/amd64 -t $FLASK_IMAGE:$IMAGE_TAG .
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to build Flask Docker image."
-    exit 1
-fi
-
-# Check if Dockerfile.nginx exists
-if [ ! -f "Dockerfile.nginx" ]; then
-    echo "Error: Dockerfile.nginx does not exist at the root level."
-    exit 1
-fi
 
 # Build the NGINX Docker image
 docker build --no-cache --platform linux/amd64 -t $NGINX_IMAGE:$IMAGE_TAG -f Dockerfile.nginx .
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to build NGINX Docker image."
-    exit 1
-fi
 
 # Tag the images for ACR
 ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --query loginServer --output tsv)
@@ -71,6 +57,9 @@ az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER
 
 # Generate deployment.yaml from template
 envsubst < deployment.yaml.template > deployment.yaml
+
+# Explicitly update AKS access to ACR (added line)
+az aks update -n $AKS_CLUSTER -g $RESOURCE_GROUP --attach-acr $ACR_NAME
 
 # Apply Kubernetes configuration
 kubectl apply -f deployment.yaml
