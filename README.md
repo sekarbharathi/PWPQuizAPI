@@ -1,9 +1,9 @@
 # PWP SPRING 2025
 # QUIZ
 # Group information
-* Student 1. Bharathi Sekar and Bharathi.Sekar@student.oulu.fi
-* Student 2. Chamudi Vidanagama and Chamudi.Vidanagama@student.oulu.fi
-* Student 3. An Vu and qvu24@student.oulu.fi
+* Student 1. An Vu and qvu24@student.oulu.fi
+* Student 2. Bharathi Sekar and Bharathi.Sekar@student.oulu.fi
+* Student 3. Chamudi Vidanagama and Chamudi.Vidanagama@student.oulu.fi
 
 
 ### DEPENDENCIES
@@ -167,5 +167,36 @@ To run the tests and check coverage, use the following command:
 
     python -m pytest --cov=app --cov-report=term-missing
 
+<<<<<<< HEAD
 
 FLASK_APP=app.app FLASK_ENV=development flask run
+=======
+# Deployment
+The Quiz API can be deployed to Azure for reliability and scalability
+
+## Architect
+![image](https://github.com/user-attachments/assets/b103638d-8401-4e8b-845d-0945e5bfd1e6)
+
+## Main Components
+
+| Component | Role & Functionality | Necessity & Alternatives |
+|-----------|----------------------|--------------------------|
+| **Docker** | Containerization platform that packages the application and its dependencies, ensuring consistent environments across development and production. | **Necessity**: Provides isolation, consistency, and portability.<br>**Alternatives**: Virtual machines, traditional server deployments. |
+| **Azure Container Registry (ACR)** | Private registry service for storing and managing Docker container images. | **Necessity**: Securely stores container images close to the deployment environment.<br>**Alternatives**: Docker Hub, Amazon ECR, GitHub Container Registry. |
+| **Kubernetes (AKS)** | Container orchestration system managing deployment, scaling, and operations of application containers. | **Necessity**: Automates container management, provides scalability.<br>**Alternatives**: Docker Swarm, Amazon ECS. |
+| **Flask** | Python web framework used to build the Quiz API application. | **Necessity**: Provides routing, request handling, and application structure.<br>**Alternatives**: Django, FastAPI. |
+| **Gunicorn** | WSGI HTTP server for running Python web applications, serving as the application server. | **Necessity**: Manages worker processes efficiently.<br>**Alternatives**: uWSGI, Waitress. |
+| **Supervisor** | Process control system for monitoring and controlling Gunicorn. | **Necessity**: Ensures application reliability by monitoring and auto-restarting processes.<br>**Alternatives**: systemd, Docker's restart policies. |
+| **Nginx** | Web server acting as a reverse proxy in front of Gunicorn. | **Necessity**: Efficiently handles HTTP requests, provides buffering.<br>**Alternatives**: Apache HTTP Server, Caddy. |
+
+## Before deploying ensure that you have:
+- Azure CLI installed, have all required access to azure services like: AKS, ACR ...
+- Docker installed
+- kubectl installed
+## Deployment Steps
+
+Execute the deployment script: source deploy-to-azure.sh
+
+## Cleanup
+Execute the clean up script: source clean-azure.sh
+>>>>>>> a0a279bb9f89036d47a03fa38a73ab2c953d7a65

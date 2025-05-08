@@ -292,8 +292,23 @@ def add_hypermedia_links(data, resource_type, resource_id=None):
 
 @app.before_request
 def check_content_type():
-    """Check content type for POST and PUT requests."""
-    if request.method in ["POST", "PUT"]:
+    """Check content type for POST, PUT, and PATCH requests.
+    
+    Returns:
+        - 400 if JSON is missing
+        - 415 if Content-Type is not application/json
+    """
+    if request.method in ["POST", "PUT", "PATCH"]:
+        content_type = request.headers.get('Content-Type', '').lower()
+        
+        # Check if Content-Type header exists and is correct
+        if content_type != 'application/json':
+            return jsonify({
+                "msg": "Unsupported media type, expected application/json",
+                "media_type": request.headers.get('Content-Type')
+            }), 415
+            
+        # Check if request actually contains JSON data
         if not request.is_json:
             return jsonify({"msg": "Missing JSON in request"}), 400
     return None
