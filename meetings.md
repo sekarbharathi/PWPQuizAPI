@@ -2,26 +2,17 @@
 
 ## Meeting 1.
 * **DATE:** 28.01.2025
-* **Course Staff:** Iván Sánchez Milara
-* **ASSISTANTS:** An Vu, Bharathi Sekar, Chamudi Vidanagama
+* **ASSISTANTS:** Iván Sánchez Milara
 
 ### Minutes
 
-* **API Overview**
+* **API Overview:** More details needs to be added in API introduction. Clarify the relationship between questions and quizzes. Explain the role of categories in the system. Distinguish clearly between authentication and authorization, especially when discussing user permissions and types.
 
-More details needs to be added in API introduction. Clarify the relationship between questions and quizzes. Explain the role of categories in the system. Distinguish clearly between authentication and authorization, especially when discussing user permissions and types.
+* **Main Concepts:** Key concepts like quizzes, questions, categories, and users were mentioned, but definitions are unclear. Answers were not included which they should be added. In diagram, The term "belongs to" needs clarification and include missing components such as answers and difficulty level in the diagram.
 
-* **Main Concepts**
+* **API Uses:** API is described as being used by two clients, but this should be expanded. No services (e.g., backend systems, integrations) were described. Clarify what clients are using the API and how.
 
-Key concepts like quizzes, questions, categories, and users were mentioned, but definitions are unclear. Answers were not included which they should be added. In diagram, The term "belongs to" needs clarification and include missing components such as answers and difficulty level in the diagram.
-
-* **API Uses**
-
-API is described as being used by two clients, but this should be expanded. No services (e.g., backend systems, integrations) were described. Clarify what clients are using the API and how.
-
-* **Related Work**
-
-Very limited description. No links provided to support claims (e.g., whether Quizlet is RESTful/CRUD-based). Test the Trivia API endpoints and include concrete results. No client application examples were provided, should include some real-world use cases or app examples.
+* **Related Work:** Very limited description. No links provided to support claims (e.g., whether Quizlet is RESTful/CRUD-based). Test the Trivia API endpoints and include concrete results. No client application examples were provided, should include some real-world use cases or app examples.
 
 ### Action points
 
@@ -29,7 +20,7 @@ Very limited description. No links provided to support claims (e.g., whether Qui
 
 * Clearly define authentication and authorization roles.
 
-* Redesign and improve the concept diagram:
+* Redesign and improve the concept diagram.
 
 * Define all entities clearly.
 
@@ -45,16 +36,23 @@ Very limited description. No links provided to support claims (e.g., whether Qui
 
 
 
-
 ## Meeting 2.
-* **DATE:**
-* **ASSISTANTS:**
+* **DATE:** 17.02.25
+* **ASSISTANTS:** Mika Oja
 
 ### Minutes
-*Summary of what was discussed during the meeting*
+
+* **Database Design**
+Add uniquely identifying strings (e.g., UUIDs or slugs) to most tables — except for the Category table where it's not necessary.
+
+* **Database Models**
+Relationships are not fully implemented. Foreign key constraints are missing at the database level and this should be defined explicitly in the schema (e.g., via ForeignKey declarations).
 
 ### Action points
-*List here the actions points discussed with assistants*
+
+* Add unique string identifiers to relevant tables (except Category).
+
+* Ensure foreign key relationships are explicitly defined in the database schema, not just in the application logic.
 
 
 
