@@ -43,7 +43,7 @@
 ### Minutes
 
 * **Database Design**
-Add uniquely identifying strings (e.g., UUIDs or slugs) to most tables — except for the Category table where it's not necessary.
+Add uniquely identifying strings (e.g., UUIDs) to most tables except for the Category table where it's not necessary.
 
 * **Database Models**
 Relationships are not fully implemented. Foreign key constraints are missing at the database level and this should be defined explicitly in the schema (e.g., via ForeignKey declarations).
@@ -53,7 +53,6 @@ Relationships are not fully implemented. Foreign key constraints are missing at 
 * Add unique string identifiers to relevant tables (except Category).
 
 * Ensure foreign key relationships are explicitly defined in the database schema, not just in the application logic.
-
 
 
 
