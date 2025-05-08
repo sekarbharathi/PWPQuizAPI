@@ -14,6 +14,31 @@ servers:
     description: API base path
 
 components:
+  parameters:
+    categoryParam:
+      name: category
+      in: path
+      required: true
+      description: Category name
+      schema:
+        type: string
+    
+    quizParam:
+      name: quiz
+      in: path
+      required: true
+      description: Quiz unique ID
+      schema:
+        type: string
+    
+    questionParam:
+      name: question
+      in: path
+      required: true
+      description: Question unique ID
+      schema:
+        type: string
+  
   securitySchemes:
     bearerAuth:
       type: http
@@ -422,6 +447,14 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 msg: Invalid credentials
+        '415':
+          description: Unsupported media type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unsupported media type, expected application/json
 
   /category:
     get:
@@ -500,15 +533,18 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 msg: Unauthorized
+        '415':
+          description: Unsupported media type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unsupported media type, expected application/json
 
   /category/{category}:
     parameters:
-      - name: category
-        in: path
-        required: true
-        description: Category name
-        schema:
-          type: string
+      - $ref: '#/components/parameters/categoryParam'
     get:
       tags:
         - Categories
@@ -599,6 +635,14 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 msg: Category 'NonExistentCategory' not found
+        '415':
+          description: Unsupported media type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unsupported media type, expected application/json
     delete:
       tags:
         - Categories
@@ -747,15 +791,18 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 msg: Category not found
+        '415':
+          description: Unsupported media type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unsupported media type, expected application/json
 
   /quiz/{quiz}:
     parameters:
-      - name: quiz
-        in: path
-        required: true
-        description: Quiz unique ID
-        schema:
-          type: string
+      - $ref: '#/components/parameters/quizParam'
     get:
       tags:
         - Quizzes
@@ -842,6 +889,14 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 msg: Category not found
+        '415':
+          description: Unsupported media type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unsupported media type, expected application/json
     delete:
       tags:
         - Quizzes
@@ -967,15 +1022,18 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 msg: Quiz not found
+        '415':
+          description: Unsupported media type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unsupported media type, expected application/json
 
   /question/{question}:
     parameters:
-      - name: question
-        in: path
-        required: true
-        description: Question unique ID
-        schema:
-          type: string
+      - $ref: '#/components/parameters/questionParam'
     get:
       tags:
         - Questions
@@ -1084,6 +1142,14 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 msg: Quiz not found
+        '415':
+          description: Unsupported media type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                msg: Unsupported media type, expected application/json
     delete:
       tags:
         - Questions
@@ -1127,12 +1193,7 @@ paths:
 
   /category/{category}/quizzes:
     parameters:
-      - name: category
-        in: path
-        required: true
-        description: Category name
-        schema:
-          type: string
+      - $ref: '#/components/parameters/categoryParam'
     get:
       tags:
         - Categories
@@ -1168,12 +1229,7 @@ paths:
 
   /quiz/{quiz}/questions:
     parameters:
-      - name: quiz
-        in: path
-        required: true
-        description: Quiz unique ID
-        schema:
-          type: string
+      - $ref: '#/components/parameters/quizParam'
     get:
       tags:
         - Quizzes
