@@ -1,8 +1,8 @@
 # Meetings notes
 
 ## Meeting 1.
-* **DATE:** 28.01.2025
-* **ASSISTANTS:** Iván Sánchez Milara
+* **DATE: 28.01.2025** 
+* **ASSISTANTS: Iván Sánchez Milara** 
 
 ### Minutes
 
@@ -37,8 +37,8 @@
 
 
 ## Meeting 2.
-* **DATE:** 17.02.25
-* **ASSISTANTS:** Mika Oja
+* **DATE: 17.02.2025** 
+* **ASSISTANTS: Mika Oja** 
 
 ### Minutes
 
@@ -57,7 +57,7 @@ Relationships are not fully implemented. Foreign key constraints are missing at 
 
 
 ## Meeting 3.
-* **DATE: 2025-03-20**
+* **DATE: 18.03.2025**
 * **ASSISTANTS: Mika Oja**
 
 ### Minutes
