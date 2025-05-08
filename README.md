@@ -1,9 +1,9 @@
 # PWP SPRING 2025
 # QUIZ
 # Group information
-* Student 1. Bharathi Sekar and Bharathi.Sekar@student.oulu.fi
-* Student 2. Chamudi Vidanagama and Chamudi.Vidanagama@student.oulu.fi
-* Student 3. An Vu and qvu24@student.oulu.fi
+* Student 1. An Vu and qvu24@student.oulu.fi
+* Student 2. Bharathi Sekar and Bharathi.Sekar@student.oulu.fi
+* Student 3. Chamudi Vidanagama and Chamudi.Vidanagama@student.oulu.fi
 
 
 ### DEPENDENCIES
