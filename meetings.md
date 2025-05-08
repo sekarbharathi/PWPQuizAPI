@@ -66,7 +66,7 @@ Very limited description. No links provided to support claims (e.g., whether Qui
 ### Minutes
 *Summary of what was discussed during the meeting*
 
-Feedback from the PWP API evaluation was reviewed in detail.
+Feedback was provided for the PWP API after the evaluation.
 
 Issues identified in the project structure, code organization, and documentation were discussed.
 
