@@ -60,14 +60,46 @@ Very limited description. No links provided to support claims (e.g., whether Qui
 
 
 ## Meeting 3.
-* **DATE:**
-* **ASSISTANTS:**
+* **DATE: 2025-03-20**
+* **ASSISTANTS: Mika Oja**
 
 ### Minutes
 *Summary of what was discussed during the meeting*
 
+Feedback from the PWP API evaluation was reviewed in detail.
+
+Issues identified in the project structure, code organization, and documentation were discussed.
+
+Specific problems with the PUT method for questions were noted for correction.
+
+Suggestions for improving the resource table in the wiki were analyzed.
+
+Additional extras like URL converters were discussed as opportunities to gain remaining points.
+
+A plan to restructure the project directory and apply code formatting tools was proposed.
+
+The importance of test coverage and validation after modifications was emphasized.
+
 ### Action points
 *List here the actions points discussed with assistants*
+
+* Fix inaccuracies in the resource table by clearly distinguishing between category and individual category endpoints.
+
+* Move application source code into a separate folder to improve structure.
+
+* Add a .gitignore file to remove unnecessary items like __pycache__, venv, and the database file.
+
+* Refactor views into proper resource classes and clean up formatting in model files.
+
+* Use black to automatically format Python files and ensure line length consistency.
+
+* Correct the PUT method for questions to handle invalid quiz_id properly.
+
+* Implement Flask-style URL converters to improve routing and gain extra points.
+
+* Re-run the test suite to confirm coverage remains high and catch any new issues.
+
+* Optionally improve logging and error handling for robustness and potential bonus marks.
 
 
 
