@@ -61,24 +61,22 @@ Relationships are not fully implemented. Foreign key constraints are missing at 
 * **ASSISTANTS: Mika Oja**
 
 ### Minutes
-*Summary of what was discussed during the meeting*
 
-Feedback was provided for the PWP API after the evaluation.
+* Feedback was provided for the PWP API after the evaluation.
 
-Issues identified in the project structure, code organization, and documentation were discussed.
+* Issues identified in the project structure, code organization, and documentation were discussed.
 
-Specific problems with the PUT method for questions were noted for correction.
+* Specific problems with the PUT method for questions were noted for correction.
 
-Suggestions for improving the resource table in the wiki were analyzed.
+* Suggestions for improving the resource table in the wiki were analyzed.
 
-Additional extras like URL converters were discussed as opportunities to gain remaining points.
+* Additional extras like URL converters were discussed as opportunities to gain remaining points.
 
-A plan to restructure the project directory and apply code formatting tools was proposed.
+* A plan to restructure the project directory and apply code formatting tools was proposed.
 
-The importance of test coverage and validation after modifications was emphasized.
+* The importance of test coverage and validation after modifications was emphasized.
 
 ### Action points
-*List here the actions points discussed with assistants*
 
 * Fix inaccuracies in the resource table by clearly distinguishing between category and individual category endpoints.
 
