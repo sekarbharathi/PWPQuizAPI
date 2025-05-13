@@ -4,8 +4,8 @@ This script populates the database with sample categories, quizzes, questions,
 and options for testing and demonstration purposes.
 """
 
-from app import app, db
-from models import Category, Quiz, Question, Option, QuizCategory, QuizQuestion
+from app.app import app, db
+from app.models import Category, Quiz, Question, Option, QuizCategory, QuizQuestion
 
 
 def create_category(name):

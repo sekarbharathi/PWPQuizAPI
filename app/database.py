@@ -7,8 +7,8 @@ The `db` instance from `models.py` is initialized and used to create the databas
 
 import os
 from flask import Flask
-from models import db  # Import db instance from models.py
-from config import Config
+from .models import db  # Import db instance from models.py
+from .config import Config
 
 # Get the base directory
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))

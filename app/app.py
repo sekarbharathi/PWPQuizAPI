@@ -26,7 +26,7 @@ from sqlalchemy import func
 import jsonschema
 from jsonschema import validate
 
-from app.config import Config 
+from app.config import Config
 from app.models import db, Quiz, Category, Option, Question, QuizQuestion, QuizCategory
 
 
@@ -217,97 +217,131 @@ def add_hypermedia_links(data, resource_type, resource_id=None):
         # Add self link with custom relation
         if resource_id:
             links["self"] = {
-                "href": url_for(f"{resource_type}_detail", **{resource_type: resource_id}, _external=True),
-                "rel": f"{resource_type}-instance"
+                "href": url_for(
+                    f"{resource_type}_detail",
+                    **{resource_type: resource_id},
+                    _external=True,
+                ),
+                "rel": f"{resource_type}-instance",
             }
         else:
             links["self"] = {
                 "href": url_for(resource_type, _external=True),
-                "rel": f"{resource_type}-collection"
+                "rel": f"{resource_type}-collection",
             }
 
         # Add collection link if we're looking at a specific resource
         if resource_id:
             links["collection"] = {
                 "href": url_for(resource_type, _external=True),
-                "rel": f"{resource_type}-collection"
+                "rel": f"{resource_type}-collection",
             }
 
         # Add resource-specific links
         if resource_type == "category" and resource_id:
             links["quizzes"] = {
-                "href": url_for("quizzes_by_category", category=resource_id, _external=True),
-                "rel": "category-quizzes"
+                "href": url_for(
+                    "quizzes_by_category", category=resource_id, _external=True
+                ),
+                "rel": "category-quizzes",
             }
         elif resource_type == "quiz" and resource_id:
             links["questions"] = {
                 "href": url_for("questions_by_quiz", quiz=resource_id, _external=True),
-                "rel": "quiz-questions"
+                "rel": "quiz-questions",
             }
             # Add backward relation to categories
-            quiz_obj = Quiz.query.filter_by(unique_id=resource_id).first() if isinstance(resource_id, str) else resource_id
+            quiz_obj = (
+                Quiz.query.filter_by(unique_id=resource_id).first()
+                if isinstance(resource_id, str)
+                else resource_id
+            )
             if quiz_obj:
-                quiz_category = QuizCategory.query.filter_by(quiz_id=quiz_obj.quiz_id).first()
+                quiz_category = QuizCategory.query.filter_by(
+                    quiz_id=quiz_obj.quiz_id
+                ).first()
                 if quiz_category:
                     category = db.session.get(Category, quiz_category.category_id)
                     if category:
                         links["category"] = {
-                            "href": url_for("category_detail", category=category, _external=True),
-                            "rel": "parent-category"
+                            "href": url_for(
+                                "category_detail", category=category, _external=True
+                            ),
+                            "rel": "parent-category",
                         }
                         # Also add link to all quizzes in the same category
                         links["category_quizzes"] = {
-                            "href": url_for("quizzes_by_category", category=category, _external=True),
-                            "rel": "sibling-quizzes"
+                            "href": url_for(
+                                "quizzes_by_category", category=category, _external=True
+                            ),
+                            "rel": "sibling-quizzes",
                         }
         elif resource_type == "question" and resource_id:
             # Add backward relation to quiz
-            question_obj = Question.query.filter_by(unique_id=resource_id).first() if isinstance(resource_id, str) else resource_id
+            question_obj = (
+                Question.query.filter_by(unique_id=resource_id).first()
+                if isinstance(resource_id, str)
+                else resource_id
+            )
             if question_obj:
-                quiz_question = QuizQuestion.query.filter_by(question_id=question_obj.question_id).first()
+                quiz_question = QuizQuestion.query.filter_by(
+                    question_id=question_obj.question_id
+                ).first()
                 if quiz_question:
                     quiz = db.session.get(Quiz, quiz_question.quiz_id)
                     if quiz:
                         links["quiz"] = {
                             "href": url_for("quiz_detail", quiz=quiz, _external=True),
-                            "rel": "parent-quiz"
+                            "rel": "parent-quiz",
                         }
 
         # Add global links to improve connectedness
         links["home"] = {"href": url_for("category", _external=True), "rel": "home"}
-        
+
         # Add root resources for better discoverability
         if resource_type != "category":
-            links["categories"] = {"href": url_for("category", _external=True), "rel": "categories-collection"}
+            links["categories"] = {
+                "href": url_for("category", _external=True),
+                "rel": "categories-collection",
+            }
         if resource_type != "quiz":
-            links["quizzes"] = {"href": url_for("quiz", _external=True), "rel": "quizzes-collection"}
+            links["quizzes"] = {
+                "href": url_for("quiz", _external=True),
+                "rel": "quizzes-collection",
+            }
         if resource_type != "question":
-            links["questions"] = {"href": url_for("question", _external=True), "rel": "questions-collection"}
-            
+            links["questions"] = {
+                "href": url_for("question", _external=True),
+                "rel": "questions-collection",
+            }
+
         data["_links"] = links
     return data
-
-
 
 
 @app.before_request
 def check_content_type():
     """Check content type for POST, PUT, and PATCH requests.
-    
+
     Returns:
         - 400 if JSON is missing
         - 415 if Content-Type is not application/json
     """
     if request.method in ["POST", "PUT", "PATCH"]:
-        content_type = request.headers.get('Content-Type', '').lower()
-        
+        content_type = request.headers.get("Content-Type", "").lower()
+
         # Check if Content-Type header exists and is correct
-        if content_type != 'application/json':
-            return jsonify({
-                "msg": "Unsupported media type, expected application/json",
-                "media_type": request.headers.get('Content-Type')
-            }), 415
-            
+        if content_type != "application/json":
+            return (
+                jsonify(
+                    {
+                        "msg": "Unsupported media type, expected application/json",
+                        "media_type": request.headers.get("Content-Type"),
+                    }
+                ),
+                415,
+            )
+
         # Check if request actually contains JSON data
         if not request.is_json:
             return jsonify({"msg": "Missing JSON in request"}), 400
@@ -353,12 +387,16 @@ class CategoryResource(MethodView):
                 # Add hypermedia links specific to this category
                 "_links": {
                     "self": {
-                        "href": url_for("category_detail", category=cat, _external=True),
-                        "rel": "category-instance"
+                        "href": url_for(
+                            "category_detail", category=cat, _external=True
+                        ),
+                        "rel": "category-instance",
                     },
                     "quizzes": {
-                        "href": url_for("quizzes_by_category", category=cat, _external=True),
-                        "rel": "category-quizzes"
+                        "href": url_for(
+                            "quizzes_by_category", category=cat, _external=True
+                        ),
+                        "rel": "category-quizzes",
                     },
                 },
             }
@@ -368,9 +406,18 @@ class CategoryResource(MethodView):
         response = {
             "categories": categories_data,
             "_links": {
-                "self": {"href": url_for("category", _external=True), "rel": "category-collection"},
-                "quizzes": {"href": url_for("quiz", _external=True), "rel": "quizzes-collection"},
-                "questions": {"href": url_for("question", _external=True), "rel": "questions-collection"}
+                "self": {
+                    "href": url_for("category", _external=True),
+                    "rel": "category-collection",
+                },
+                "quizzes": {
+                    "href": url_for("quiz", _external=True),
+                    "rel": "quizzes-collection",
+                },
+                "questions": {
+                    "href": url_for("question", _external=True),
+                    "rel": "questions-collection",
+                },
             },
         }
 
@@ -416,25 +463,31 @@ class CategoryDetailResource(MethodView):
             "name": category.name,
             "_links": {
                 "self": {
-                    "href": url_for("category_detail", category=category, _external=True),
-                    "rel": "category-instance"
+                    "href": url_for(
+                        "category_detail", category=category, _external=True
+                    ),
+                    "rel": "category-instance",
                 },
                 "collection": {
                     "href": url_for("category", _external=True),
-                    "rel": "category-collection"
+                    "rel": "category-collection",
                 },
                 "quizzes": {
-                    "href": url_for("quizzes_by_category", category=category, _external=True),
-                    "rel": "category-quizzes"
+                    "href": url_for(
+                        "quizzes_by_category", category=category, _external=True
+                    ),
+                    "rel": "category-quizzes",
                 },
                 # Add link to all questions in the category
                 "questions": {
-                    "href": url_for("category_questions", category=category, _external=True),
-                    "rel": "category-questions"
-                }
-            }
+                    "href": url_for(
+                        "category_questions", category=category, _external=True
+                    ),
+                    "rel": "category-questions",
+                },
+            },
         }
-        
+
         return jsonify(response), 200
 
     @jwt_required()
@@ -602,36 +655,40 @@ class QuizDetailResource(MethodView):
         links = {
             "self": {
                 "href": url_for("quiz_detail", quiz=quiz, _external=True),
-                "rel": "quiz-instance"
+                "rel": "quiz-instance",
             },
             # EXPLICIT LINK TO QUESTIONS - this is the key link we need
             "questions": {
                 "href": url_for("questions_by_quiz", quiz=quiz, _external=True),
-                "rel": "quiz-questions"
+                "rel": "quiz-questions",
             },
             "collection": {
                 "href": url_for("quiz", _external=True),
-                "rel": "quiz-collection"
-            }
+                "rel": "quiz-collection",
+            },
         }
-        
+
         # Add category links if category exists
         if category_obj:
             links["category"] = {
-                "href": url_for("category_detail", category=category_obj, _external=True),
-                "rel": "parent-category"
+                "href": url_for(
+                    "category_detail", category=category_obj, _external=True
+                ),
+                "rel": "parent-category",
             }
             links["category_quizzes"] = {
-                "href": url_for("quizzes_by_category", category=category_obj, _external=True),
-                "rel": "sibling-quizzes"
+                "href": url_for(
+                    "quizzes_by_category", category=category_obj, _external=True
+                ),
+                "rel": "sibling-quizzes",
             }
-        
+
         # Add links to the response
         response["_links"] = links
-        
+
         # Return the response without using add_hypermedia_links
         return jsonify(response), 200
-    
+
     @jwt_required()
     def put(self, quiz):
         """Updates the details of an existing quiz.
@@ -813,22 +870,22 @@ class QuestionResource(MethodView):
                 "_links": {
                     "self": {
                         "href": url_for("question_detail", question=q, _external=True),
-                        "rel": "question-instance"
+                        "rel": "question-instance",
                     }
-                }
+                },
             }
-            
+
             # Add link to parent quiz if it exists
             if quiz_obj:
                 question_data["_links"]["quiz"] = {
                     "href": url_for("quiz_detail", quiz=quiz_obj, _external=True),
-                    "rel": "parent-quiz"
+                    "rel": "parent-quiz",
                 }
                 question_data["_links"]["quiz_questions"] = {
                     "href": url_for("questions_by_quiz", quiz=quiz_obj, _external=True),
-                    "rel": "sibling-questions"
+                    "rel": "sibling-questions",
                 }
-                
+
             question_list.append(question_data)
 
         # Add collection-level hypermedia links with relations
@@ -837,20 +894,21 @@ class QuestionResource(MethodView):
             "_links": {
                 "self": {
                     "href": url_for("question", _external=True),
-                    "rel": "questions-collection"
+                    "rel": "questions-collection",
                 },
                 "quizzes": {
                     "href": url_for("quiz", _external=True),
-                    "rel": "quizzes-collection"
+                    "rel": "quizzes-collection",
                 },
                 "categories": {
                     "href": url_for("category", _external=True),
-                    "rel": "categories-collection"
-                }
-            }
+                    "rel": "categories-collection",
+                },
+            },
         }
 
         return jsonify(response), 200
+
 
 class QuestionDetailResource(MethodView):
     """Handles operations for individual question resources (read, update, delete)."""
@@ -1069,13 +1127,13 @@ class QuizByCategoryResource(MethodView):
                 "_links": {
                     "self": {
                         "href": url_for("quiz_detail", quiz=quiz, _external=True),
-                        "rel": "quiz-instance"
+                        "rel": "quiz-instance",
                     },
                     "questions": {
                         "href": url_for("questions_by_quiz", quiz=quiz, _external=True),
-                        "rel": "quiz-questions"
-                    }
-                }
+                        "rel": "quiz-questions",
+                    },
+                },
             }
             quizzes_list.append(quiz_data)
 
@@ -1085,18 +1143,24 @@ class QuizByCategoryResource(MethodView):
             "quizzes": quizzes_list,
             "_links": {
                 "self": {
-                    "href": url_for("quizzes_by_category", category=category, _external=True),
-                    "rel": "category-quizzes"
+                    "href": url_for(
+                        "quizzes_by_category", category=category, _external=True
+                    ),
+                    "rel": "category-quizzes",
                 },
                 "category": {
-                    "href": url_for("category_detail", category=category, _external=True),
-                    "rel": "parent-category"
+                    "href": url_for(
+                        "category_detail", category=category, _external=True
+                    ),
+                    "rel": "parent-category",
                 },
                 "questions": {
-                    "href": url_for("category_questions", category=category, _external=True),
-                    "rel": "category-questions"
-                }
-            }
+                    "href": url_for(
+                        "category_questions", category=category, _external=True
+                    ),
+                    "rel": "category-questions",
+                },
+            },
         }
 
         return jsonify(response), 200
@@ -1104,6 +1168,7 @@ class QuizByCategoryResource(MethodView):
 
 class FilteredQuizQuestionsResource(MethodView):
     """Handles filtered questions for a specific quiz with complexity level."""
+
     def get(self, category_name, quiz_name):
         """Retrieves filtered questions for a specific quiz with hypermedia."""
         # Get query parameters
@@ -1349,11 +1414,11 @@ class QuestionsByQuizResource(MethodView):
                 "_links": {
                     "self": {
                         "href": url_for("question_detail", question=q, _external=True),
-                        "rel": "question-instance"
+                        "rel": "question-instance",
                     },
                     "quiz": {
                         "href": url_for("quiz_detail", quiz=quiz, _external=True),
-                        "rel": "parent-quiz"
+                        "rel": "parent-quiz",
                     },
                 },
             }
@@ -1366,8 +1431,10 @@ class QuestionsByQuizResource(MethodView):
             category = db.session.get(Category, quiz_category.category_id)
             if category:
                 category_link = {
-                    "href": url_for("category_detail", category=category, _external=True),
-                    "rel": "parent-category"
+                    "href": url_for(
+                        "category_detail", category=category, _external=True
+                    ),
+                    "rel": "parent-category",
                 }
 
         # Add collection-level hypermedia with improved relations
@@ -1378,23 +1445,37 @@ class QuestionsByQuizResource(MethodView):
             },
             "questions": questions_list,
             "_links": {
-                "self": {"href": url_for("questions_by_quiz", quiz=quiz, _external=True), "rel": "quiz-questions"},
-                "quiz": {"href": url_for("quiz_detail", quiz=quiz, _external=True), "rel": "parent-quiz"},
+                "self": {
+                    "href": url_for("questions_by_quiz", quiz=quiz, _external=True),
+                    "rel": "quiz-questions",
+                },
+                "quiz": {
+                    "href": url_for("quiz_detail", quiz=quiz, _external=True),
+                    "rel": "parent-quiz",
+                },
                 "home": {"href": url_for("category", _external=True), "rel": "home"},
-                "categories": {"href": url_for("category", _external=True), "rel": "categories-collection"},
-                "quizzes": {"href": url_for("quiz", _external=True), "rel": "quizzes-collection"}
+                "categories": {
+                    "href": url_for("category", _external=True),
+                    "rel": "categories-collection",
+                },
+                "quizzes": {
+                    "href": url_for("quiz", _external=True),
+                    "rel": "quizzes-collection",
+                },
             },
         }
-        
+
         # Add category link if found
         if category_link:
             response["_links"]["category"] = category_link
 
         return jsonify(response), 200
+
+
 # Create a new endpoint to list all questions across all quizzes in a category
 class QuestionsInCategoryResource(MethodView):
     """Handles retrieval of all questions across all quizzes in a category."""
-    
+
     def get(self, category):
         """Retrieves all questions from all quizzes in a specific category."""
         # Find all quizzes in this category
@@ -1404,20 +1485,22 @@ class QuestionsInCategoryResource(MethodView):
             .filter(QuizCategory.category_id == category.category_id)
             .all()
         )
-        
+
         if not quizzes:
             return jsonify({"questions": [], "category": category.name}), 200
-            
+
         # Collect all questions from all quizzes
         all_questions = []
         quiz_ids = [quiz.quiz_id for quiz in quizzes]
-        
+
         # Get all questions for these quizzes
-        quiz_questions = QuizQuestion.query.filter(QuizQuestion.quiz_id.in_(quiz_ids)).all()
+        quiz_questions = QuizQuestion.query.filter(
+            QuizQuestion.quiz_id.in_(quiz_ids)
+        ).all()
         question_ids = [qq.question_id for qq in quiz_questions]
-        
+
         questions = Question.query.filter(Question.question_id.in_(question_ids)).all()
-        
+
         # Build response with questions and their options
         for question in questions:
             # Get quiz for this question
@@ -1425,7 +1508,7 @@ class QuestionsInCategoryResource(MethodView):
             quiz = None
             if qq:
                 quiz = db.session.get(Quiz, qq.quiz_id)
-                
+
             # Get options for this question
             options = Option.query.filter_by(question_id=question.question_id).all()
             options_list = [
@@ -1436,7 +1519,7 @@ class QuestionsInCategoryResource(MethodView):
                 }
                 for opt in options
             ]
-            
+
             question_data = {
                 "unique_id": question.unique_id,
                 "question_statement": question.question_statement,
@@ -1446,21 +1529,23 @@ class QuestionsInCategoryResource(MethodView):
                 "options": options_list,
                 "_links": {
                     "self": {
-                        "href": url_for("question_detail", question=question, _external=True),
-                        "rel": "question-instance"
+                        "href": url_for(
+                            "question_detail", question=question, _external=True
+                        ),
+                        "rel": "question-instance",
                     }
-                }
+                },
             }
-            
+
             # Add quiz link if quiz exists
             if quiz:
                 question_data["_links"]["quiz"] = {
                     "href": url_for("quiz_detail", quiz=quiz, _external=True),
-                    "rel": "parent-quiz"
+                    "rel": "parent-quiz",
                 }
-                
+
             all_questions.append(question_data)
-            
+
         # Build the complete response
         response = {
             "category": category.name,
@@ -1468,21 +1553,28 @@ class QuestionsInCategoryResource(MethodView):
             "questions": all_questions,
             "_links": {
                 "self": {
-                    "href": url_for("category_questions", category=category, _external=True),
-                    "rel": "category-questions"
+                    "href": url_for(
+                        "category_questions", category=category, _external=True
+                    ),
+                    "rel": "category-questions",
                 },
                 "category": {
-                    "href": url_for("category_detail", category=category, _external=True),
-                    "rel": "parent-category"
+                    "href": url_for(
+                        "category_detail", category=category, _external=True
+                    ),
+                    "rel": "parent-category",
                 },
                 "quizzes": {
-                    "href": url_for("quizzes_by_category", category=category, _external=True),
-                    "rel": "category-quizzes"
-                }
-            }
+                    "href": url_for(
+                        "quizzes_by_category", category=category, _external=True
+                    ),
+                    "rel": "category-quizzes",
+                },
+            },
         }
-        
+
         return jsonify(response), 200
+
 
 # Register all routes with updated converters
 app.add_url_rule("/login", view_func=LoginResource.as_view("login"), methods=["POST"])
@@ -1538,6 +1630,18 @@ app.add_url_rule(
     methods=["GET"],
 )
 
+@app.route("/")
+def api_entry_point():
+    """Provides the API entry point with hypermedia links"""
+    return jsonify({
+        "_links": {
+            "self": {"href": url_for("api_entry_point", _external=True)},
+            "login": {"href": url_for("login", _external=True)},
+            "category": {"href": url_for("category", _external=True)},
+            "quiz": {"href": url_for("quiz", _external=True)},
+            "question": {"href": url_for("question", _external=True)}
+        }
+    })
+
 if __name__ == "__main__":
     app.run(debug=True)
-
