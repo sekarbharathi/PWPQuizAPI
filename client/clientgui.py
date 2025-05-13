@@ -2,6 +2,11 @@
 # pylint: disable=too-many-lines
 
 """QuizApp Client - A PyQt5-based GUI for quiz management."""
+
+# Client design and overall architecture was brainstormed with DeepSeek Chat (https://deepseek.com)
+# Hypermedia/Schema implementation was assisted by ChatGPT (https://chat.openai.com)
+# UI design and debugging was done with assistance from multiple AIs including ChatGPT, DeepSeek, and Claude
+
 import sys
 import requests
 from PyQt5.QtWidgets import (  # type: ignore
@@ -37,8 +42,14 @@ API_BASE_URL = "http://127.0.0.1:5000"
 ADMIN_USERNAME = "admin"
 
 
+# Client architecture and design brainstorming assisted by DeepSeek
+
+
 class QuizClientGUI(QMainWindow):
     """Initialize main window, UI, and API connection."""
+
+    # Main window design and initialization logic was developed with AI assistance
+    # from DeepSeek Chat and ChatGPT for PyQt5 best practices
 
     def __init__(self):
         super().__init__()
@@ -53,7 +64,8 @@ class QuizClientGUI(QMainWindow):
         self.text_dark = "#000000"
         self.text_light = "#FFFFFF"
 
-        # Style sheet
+        # Style sheet was optimized with DeepSeek's recommendations
+
         self.setStyleSheet(
             f"""
             QMainWindow {{
@@ -327,7 +339,8 @@ class QuizClientGUI(QMainWindow):
                 self, "Loading Error", f"Failed to load initial data: {str(e)}"
             )
 
-    # Hypermedia methods
+    # Hypermedia methods - implemented with ChatGPT's guidance on REST best practices
+
     def load_api_entry_point(self):
         """Load the API entry point to discover available resources"""
         try:
@@ -872,7 +885,7 @@ class QuizClientGUI(QMainWindow):
             self.token = response["access_token"]
             self.is_admin = True
             self.mode_label.setText("ADMIN MODE")
-            self.mode_label.setStyleSheet("font-weight: bold; color: white;")
+            self.mode_label.setStyleSheet("font-weight: bold; color: White;")
             self.menu_buttons["Admin Login"].setText("Admin Tools")
             self.menu_buttons["Admin Login"].clicked.disconnect()
             self.menu_buttons["Admin Login"].clicked.connect(self.show_admin_menu)
@@ -2214,7 +2227,7 @@ class QuizClientGUI(QMainWindow):
         self.token = None
         self.is_admin = False
         self.mode_label.setText("USER MODE")
-        self.mode_label.setStyleSheet("font-weight: bold; color: orange;")
+        self.mode_label.setStyleSheet("font-weight: bold; color: white;")
         self.menu_buttons["Admin Login"].setText("Admin Login")
         self.menu_buttons["Admin Login"].clicked.disconnect()
         self.menu_buttons["Admin Login"].clicked.connect(self.show_login_page)
