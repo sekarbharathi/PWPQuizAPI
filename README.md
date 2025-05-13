@@ -5,8 +5,9 @@
 * Student 2. Bharathi Sekar and Bharathi.Sekar@student.oulu.fi
 * Student 3. Chamudi Vidanagama and Chamudi.Vidanagama@student.oulu.fi
 
+# Project Overview
 
-# DEPENDENCIES
+## Dependencies
 
 #### This project requires the following external libraries:
 
